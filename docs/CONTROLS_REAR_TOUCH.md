@@ -1,7 +1,7 @@
-# Rear-Touch Push Steering ("Smash Cops" / "Finger Behind")
+# Rear-Touch Push Steering ("Touch-Behind" Control Scheme)
 
-## Overview & Design Inspiration
-Inspired by the control mechanic pioneered in Hutch's *Smash Cops*, the vehicle is piloted using a single finger placed behind the rear bumper:
+## Overview & Design Concept
+Piloted using a single finger placed behind the rear bumper:
 - **Pushing directly behind the bumper** pushes the vehicle forward, with throttle proportional to push distance.
 - **Deflecting the finger left or right** relative to the vehicle's longitudinal axis exerts steering torque, intuitively swinging the rear tail into turns (counter-rotational push steering).
 - **Placing the finger ahead of the rear bumper** (towards the vehicle cabin) triggers active braking and reverse gear.
@@ -76,7 +76,7 @@ The throttle output is evaluated with a deadband $\epsilon_{\text{deadzone}}$ (`
    $$\text{throttle} = 0$$
 
 ### 4. Steering Calculation
-In Smash Cops push-steering, touching to the right of the car exerts a lateral force that pushes the rear tail to the right, causing the vehicle's nose to pivot to the **left** (analogous to swinging the back end):
+In rear-touch push-steering, touching to the right of the car exerts a lateral force that pushes the rear tail to the right, causing the vehicle's nose to pivot to the **left** (analogous to swinging the back end):
 
 1. **Active Turn** ($|\Delta_{\text{lat}}| > \epsilon_{\text{deadzone}}$):
    $$\text{effectiveLat} = |\Delta_{\text{lat}}| - \epsilon_{\text{deadzone}}$$
@@ -156,7 +156,7 @@ Exposed in `useCarConfigStore` and live-adjustable in `DebugMenu.tsx`:
 | `showTouchGizmo` | `boolean` | `true` | `true` / `false` | Toggle rendering of the push tether ring and target lines |
 
 ### Preset Defaults for Rear Touch:
-- **Smash Cops (Default)**: Anchor $55\text{ px}$, Push Radius $110\text{ px}$, Steer Offset $85\text{ px}$, Deadzone $10\text{ px}$.
+- **Arcade Default**: Anchor $55\text{ px}$, Push Radius $110\text{ px}$, Steer Offset $85\text{ px}$, Deadzone $10\text{ px}$.
 - **Street Drift**: Anchor $60\text{ px}$, Push Radius $120\text{ px}$, Steer Offset $90\text{ px}$, Deadzone $8\text{ px}$.
 - **Track Grip**: Anchor $50\text{ px}$, Push Radius $100\text{ px}$, Steer Offset $75\text{ px}$, Deadzone $10\text{ px}$.
 - **Heavy Muscle**: Anchor $65\text{ px}$, Push Radius $130\text{ px}$, Steer Offset $95\text{ px}$, Deadzone $12\text{ px}$.

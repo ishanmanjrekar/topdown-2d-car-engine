@@ -92,7 +92,7 @@ export class RearTouchController {
     }
 
     // 5. Steering Calculation:
-    // In Smash Cops rear-touch, touching to the right of the car pushes the rear right,
+    // In rear-touch push steering, touching to the right of the car pushes the rear right,
     // which turns the car to the left (counter-rotation like swinging a tail).
     // If finger is to the right (deltaLat > 0), steer is negative (left).
     let rawSteer = 0;

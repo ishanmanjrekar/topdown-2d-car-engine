@@ -1,7 +1,7 @@
 # Top-Down 2D Car Engine Architecture
 
 ## Overview
-**topdown-2d-car-engine** is a modular, high-performance 2D car driving engine designed for top-down and isometric driving games. Built with React 19, TypeScript, and HTML5 Canvas 2D, it features realistic arcade vehicle physics, a specialized single-finger push-back touch control scheme inspired by Hutch's *Smash Cops*, real-time telemetry HUD, in-game tuning drawer, and cross-platform export support (Web, Itch.io iframe sandbox, and native Android APK via Capacitor).
+**topdown-2d-car-engine** is a modular, high-performance 2D car driving engine designed for top-down and isometric driving games. Built with React 19, TypeScript, and HTML5 Canvas 2D, it features realistic arcade vehicle physics, an intuitive single-finger push-behind touch control scheme, real-time telemetry HUD, in-game tuning drawer, and cross-platform export support (Web, Itch.io iframe sandbox, and native Android APK via Capacitor).
 
 ---
 
@@ -10,7 +10,7 @@
 topdown-2d-car-engine/
 ├── docs/                                # Engine specifications & physics documentation
 │   ├── ARCHITECTURE.md                  # System architecture, pipeline, and platform design (this file)
-│   ├── CONTROLS_REAR_TOUCH.md           # Smash Cops push-back steering math & touch unprojection
+│   ├── CONTROLS_REAR_TOUCH.md           # Rear-touch push-behind steering math & touch unprojection
 │   └── VEHICLE_PHYSICS.md               # 2D vehicle dynamics, drift mechanics, and presets
 ├── scripts/                             # Automated portable build & environment scripts
 │   ├── setup-mobile-env.ps1             # Portable JDK 21 + Android command-line tools bootstrap
@@ -33,7 +33,7 @@ topdown-2d-car-engine/
 │   │       └── CarCanvas.tsx            # Primary simulation loop, input handlers, and multi-layer renderer
 │   ├── engine/
 │   │   ├── CarPhysics.ts                # 2D vehicle dynamics, friction, drift decay, and wheel geometry
-│   │   ├── RearTouchController.ts       # Smash Cops rear bumper anchor push-to-drive & steer math
+│   │   ├── RearTouchController.ts       # Rear bumper anchor push-to-drive & steer math
 │   │   ├── Camera.ts                    # Dynamic follow camera with speed lookahead and car-up rotation
 │   │   ├── ParticleSystem.ts            # Tire skid mark persistence and smoke puff simulation
 │   │   └── Track.ts                     # Asphalt arena, boundaries, slalom/skidpad cones, trees & billboards
@@ -151,5 +151,5 @@ flowchart TD
 ## State Management Architecture
 
 State is cleanly separated into two Zustand stores:
-- **`useCarConfigStore`**: Stores all live-tunable physics constants, control sensitivity radii, preset configurations (`smash-cops`, `street-drift`, `track-grip`, `heavy-muscle`), and visual toggles.
+- **`useCarConfigStore`**: Stores all live-tunable physics constants, control sensitivity radii, preset configurations (`arcade-default`, `street-drift`, `track-grip`, `heavy-muscle`), and visual toggles.
 - **`useGameStore`**: Stores transient game runtime state including active control mode (`rear-touch` vs. `keyboard`), debug menu open/close state, camera zoom level, pause flag, and real-time telemetry data.

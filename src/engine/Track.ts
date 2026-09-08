@@ -120,7 +120,7 @@ export class Track {
     // Trackside Sponsor Billboards / Containers
     this.billboards = [
       { x: -300, y: -850, w: 140, h: 28, angle: 0, text: 'APEX RACING', color: '#00f2fe' },
-      { x: 300, y: -850, w: 140, h: 28, angle: 0, text: 'SMASH COPS', color: '#ff3366' },
+      { x: 300, y: -850, w: 140, h: 28, angle: 0, text: 'OVERSTEER', color: '#ff3366' },
       { x: -300, y: 850, w: 140, h: 28, angle: 0, text: 'TURBO DRIFT', color: '#ffb703' },
       { x: 300, y: 850, w: 140, h: 28, angle: 0, text: 'OCTANE 100', color: '#39ff14' },
       { x: -1100, y: 250, w: 130, h: 28, angle: Math.PI / 2, text: 'SKIDPAD ZONE', color: '#00f2fe' },

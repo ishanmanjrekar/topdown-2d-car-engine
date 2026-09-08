@@ -13,7 +13,7 @@ export interface CarPhysicsConfig {
   driftFactor: number;        // Grip slip multiplier [0.88 = high grip, 0.96 = slippery drift]
   angularDrag: number;        // Angular velocity decay [0.80 - 0.95]
 
-  // Smash Cops Rear-Touch Steering ("Finger Behind")
+  // Rear-Touch Push Steering ("Touch-Behind")
   rearAnchorDistance: number; // Distance in pixels behind car for rear bumper anchor
   rearPushRadius: number;     // Distance required behind anchor for 100% throttle
   rearSteerMaxOffset: number; // Lateral offset in pixels for 100% steering lock
@@ -27,7 +27,7 @@ export interface CarPhysicsConfig {
   carColor: string;           // Vehicle chassis accent color
 }
 
-export type PresetName = 'smash-cops' | 'street-drift' | 'track-grip' | 'heavy-muscle';
+export type PresetName = 'arcade-default' | 'street-drift' | 'track-grip' | 'heavy-muscle';
 
 interface CarConfigState extends CarPhysicsConfig {
   updateConfig: (patch: Partial<CarPhysicsConfig>) => void;
@@ -36,7 +36,7 @@ interface CarConfigState extends CarPhysicsConfig {
 }
 
 const PRESETS: Record<PresetName, CarPhysicsConfig> = {
-  'smash-cops': {
+  'arcade-default': {
     maxSpeed: 460,
     acceleration: 480,
     reverseSpeed: 180,
@@ -115,9 +115,9 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
 };
 
 export const useCarConfigStore = create<CarConfigState>((set) => ({
-  ...PRESETS['smash-cops'],
+  ...PRESETS['arcade-default'],
 
   updateConfig: (patch) => set((state) => ({ ...state, ...patch })),
-  resetToDefault: () => set({ ...PRESETS['smash-cops'] }),
+  resetToDefault: () => set({ ...PRESETS['arcade-default'] }),
   loadPreset: (preset) => set({ ...PRESETS[preset] })
 }));

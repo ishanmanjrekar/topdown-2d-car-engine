@@ -1,6 +1,6 @@
 # Top-Down 2D Car Engine 🏎️
 
-> High-performance 2D arcade car driving engine featuring "Smash Cops" rear-touch push steering, realistic lateral drift physics, live telemetry HUD, in-game tuning drawer, and cross-platform compilation (Web, Itch.io sandbox, and Android APK).
+> High-performance 2D arcade car driving physics engine featuring intuitive rear-touch push steering (touch-behind throttle & pivot steering), lateral drift physics, real-time telemetry HUD, in-game tuning drawer, and cross-platform compilation (Web, Itch.io sandbox, and Android APK).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
@@ -15,18 +15,18 @@
 Detailed mathematical formulations, architecture diagrams, and tuning dictionaries are documented in the [`docs/`](./docs) folder:
 
 - **[System Architecture (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)**: Full game loop pipeline, dynamic follow camera with lookahead and car-up rotation, responsive viewport scaling (`BoundingBox`), multi-layer canvas rendering, and state management.
-- **[Smash Cops Push Steering (`docs/CONTROLS_REAR_TOUCH.md`)](./docs/CONTROLS_REAR_TOUCH.md)**: Mathematical derivation of rear bumper anchor projection, push throttle dynamics, counter-rotational steer torque, touch unprojection through camera transforms, and interactive visual gizmo.
+- **[Rear-Touch Push Steering (`docs/CONTROLS_REAR_TOUCH.md`)](./docs/CONTROLS_REAR_TOUCH.md)**: Mathematical derivation of rear bumper anchor projection, push throttle dynamics, counter-rotational steer torque, touch unprojection through camera transforms, and interactive visual gizmo.
 - **[2D Vehicle Physics Model (`docs/VEHICLE_PHYSICS.md`)](./docs/VEHICLE_PHYSICS.md)**: Velocity decomposition into local coordinates, powertrain drive & active braking, lateral drift friction decay, speed-dependent steering authority, arena wall collisions, telemetry equations, and preset specifications.
 
 ---
 
 ## ✨ Features
 
-- 🎮 **Intuitive Rear-Touch Steering**: Pilot the car with a single finger placed behind the rear bumper — push forward to throttle, slide laterally to steer, press ahead to brake/reverse.
+- 🎮 **Intuitive Rear-Touch Push Steering**: Pilot the car with a single finger placed behind the rear bumper — push forward to throttle, slide laterally to steer/swing the rear axle, and press forward ahead of the bumper to brake or reverse.
 - 💨 **Arcade Drift Physics**: Dynamic tire friction model with realistic oversteer, slip angle measurement, continuous tire skid marks, and expanding tire smoke particles.
-- 🎥 **Dynamic Chase Camera**: Speed-proportional forward lookahead, smooth damping, and automatic rotation to keep the vehicle oriented upwards with $40\%$ bottom screen room for finger controls.
+- 🎥 **Dynamic Chase Camera**: Speed-proportional forward lookahead, smooth damping, and automatic rotation to keep the vehicle oriented upwards with $40\%$ bottom screen room for touch controls.
 - 📊 **Real-Time Telemetry HUD**: Live digital speedometer ($\text{km/h}$ and $\text{px/s}$), slip angle indicator, estimated lateral G-force meter, drift state indicator, and FPS counter.
-- 🎛️ **Live Tuning Drawer**: In-game slide-out drawer to tweak physics constants in real time or switch between built-in presets (`Smash Cops`, `Street Drift`, `Track Grip`, `Heavy Muscle`).
+- 🎛️ **Live Tuning Drawer**: In-game slide-out drawer to tweak physics constants in real time or switch between built-in presets (`Arcade Default`, `Street Drift`, `Track Grip`, `Heavy Muscle`).
 - 📱 **Cross-Platform Deployment**:
   - **Web / Itch.io Sandbox**: Letterboxed responsive scaler clamped to physical screen bounds.
   - **Native Android APK**: 100% fluid borderless fullscreen layout powered by Capacitor 7.
@@ -39,10 +39,61 @@ The engine comes equipped with 4 ready-to-race tuning setups:
 
 | Preset | Max Speed | Acceleration | Lateral Friction | Drift Threshold | Style / Feel |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Smash Cops** (Default) | 880 px/s | 1150 px/s² | 0.88 | 16° | High-torque arcade pursuit with forgiving slide recovery |
+| **Arcade Default** (Default) | 880 px/s | 1150 px/s² | 0.88 | 16° | High-torque arcade pursuit with forgiving slide recovery |
 | **Street Drift** | 920 px/s | 1300 px/s² | 0.78 | 12° | Loose rear end tuned for sustained high-angle drifts |
 | **Track Grip** | 1000 px/s | 1450 px/s² | 0.96 | 24° | High downforce, sticky tires, sharp cornering lines |
 | **Heavy Muscle** | 820 px/s | 950 px/s² | 0.84 | 14° | Weighty momentum, deep engine rumble, wide swing turns |
+
+---
+
+## 🤖 For AI Coding Assistants & Agentic Scaffolding
+
+This repository is organized to be **zero-friction for AI coding agents** (Antigravity, Cursor, Claude Code, GitHub Copilot, ChatGPT). If you want an AI assistant to build a full game using this driving engine, simply share the repo link and use the prompt template below.
+
+### Engine Quick-Reference for AI Agents
+The core physics, camera, and input math are completely decoupled and modular:
+- **`src/engine/CarPhysics.ts`**: Pure TypeScript 2D vehicle dynamics. Computes longitudinal acceleration, tire slip angle, lateral drift friction decay, and arena bounds collisions. It has zero UI dependencies and can run in React, Canvas 2D, WebGL, PixiJS, Three.js, or headless on Node.js servers.
+- **`src/engine/RearTouchController.ts`**: Single-finger rear-anchor steering controller. Computes forward push-throttle, counter-rotational steer torque, and braking/reverse vectors in car-local space.
+- **`src/engine/Camera.ts`**: Smooth chase camera with forward lookahead proportional to velocity and car-up heading rotation.
+- **`src/engine/Track.ts`**: Arena boundaries, walls, slalom cones, skidpads, and trackside obstacles.
+- **`src/stores/useCarConfigStore.ts`**: Live physics tuning state with hot-reloading presets.
+
+### 📋 Ready-to-Use AI Agent Prompt Template
+Copy and paste this prompt to an AI assistant:
+
+```text
+I am building a 2D top-down driving game. Please use this repository as my base vehicle physics and control engine:
+https://github.com/ishanmanjrekar/topdown-2d-car-engine
+
+Please preserve the core driving foundation:
+1. Vehicle physics simulation (src/engine/CarPhysics.ts)
+2. Rear-touch push-behind steering system (src/engine/RearTouchController.ts)
+3. Dynamic chase camera (src/engine/Camera.ts)
+4. Vehicle configuration store (src/stores/useCarConfigStore.ts)
+
+On top of this engine, help me build:
+- [Insert your desired game features here: e.g., AI enemy pursuit cars, checkpoint-based lap timer, cargo delivery objectives, procedural track generation, or custom vehicle skins].
+```
+
+---
+
+## 🧩 How to Reuse & Extend This Engine
+
+### 1. Designing Custom Tracks or Arenas
+Open [`src/engine/Track.ts`](./src/engine/Track.ts):
+- Modify `this.bounds` to change the arena dimensions.
+- Edit `this.innerCones` and `this.outerCones` to lay out custom track circuits or obstacle courses.
+- Add collision geometry inside `checkWallCollision()` or register custom obstacle bounding boxes.
+
+### 2. Adding Game Rules & Objectives (Laps, Pursuit, Delivery)
+The vehicle coordinates (`car.x`, `car.y`, `car.speed`, `car.angle`) are available on every frame in `CarCanvas.tsx` or via `useGameStore.ts`. You can easily add:
+- **Checkpoints / Lap Timers**: Define line segments or radius triggers in world coordinates and test `hypot(car.x - cp.x, car.y - cp.y) < threshold`.
+- **AI Opponents / Police Pursuit**: Instantiate multiple `CarPhysics` instances and steer them toward the player's position using simple pursuit steering vectors.
+- **Collectibles & Targets**: Render pickup nodes on the canvas and check bounding circle intersections.
+
+### 3. Custom Vehicle Graphics
+By default, `CarCanvas.tsx` renders a sleek procedural vector sports car with headlights, brake lights, and wheels. To use a custom sprite or 2D spritesheet:
+- Replace `drawCar()` in `CarCanvas.tsx` with `ctx.drawImage(myCarSprite, -width/2, -height/2, width, height)`.
 
 ---
 
@@ -51,9 +102,9 @@ The engine comes equipped with 4 ready-to-race tuning setups:
 ```text
 topdown-2d-car-engine/
 ├── docs/                      # Architectural & mathematical documentation
-│   ├── ARCHITECTURE.md
-│   ├── CONTROLS_REAR_TOUCH.md
-│   └── VEHICLE_PHYSICS.md
+│   ├── ARCHITECTURE.md        # Pipeline, viewport scaling & state management
+│   ├── CONTROLS_REAR_TOUCH.md # Rear-touch steering math & touch unprojection
+│   └── VEHICLE_PHYSICS.md     # Lateral drift friction decay & presets
 ├── scripts/                   # Automated build & packaging scripts
 │   ├── build-apk.ps1          # Compiles signed/debug Android APK
 │   ├── build-itch.ps1         # Compiles zip bundle for itch.io web sandbox
@@ -61,7 +112,7 @@ topdown-2d-car-engine/
 ├── src/                       # Game engine source code
 │   ├── components/            # React UI overlay components (HUD, TuningDrawer, BoundingBox)
 │   ├── engine/                # Core physics, camera, particle system, and canvas renderer
-│   ├── store/                 # Zustand state stores (physics parameters, telemetry)
+│   ├── stores/                # Zustand state stores (physics parameters, telemetry)
 │   ├── App.tsx                # Main canvas mount & orchestration
 │   └── main.tsx               # Application entry point
 ├── capacitor.config.ts        # Capacitor mobile native shell configuration
@@ -89,7 +140,7 @@ npm run dev
 ```
 Open `http://localhost:5173` in your browser.
 
-### Keyboard Dev Controls
+### Keyboard Controls (Desktop Testing)
 When testing on desktop without touch, keyboard overrides are enabled:
 - `W` / `↑`: Full Throttle
 - `S` / `↓`: Brake / Reverse
@@ -119,6 +170,12 @@ When testing on desktop without touch, keyboard overrides are enabled:
   powershell -ExecutionPolicy Bypass -File scripts/setup-mobile-env.ps1
   powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1
   ```
+
+---
+
+## 💡 Inspiration & Attribution
+
+The intuitive single-touch push-behind steering mechanic is inspired by mobile arcade classics such as Hutch Games' *Smash Cops*.
 
 ---
 

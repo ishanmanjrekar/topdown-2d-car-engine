@@ -67,7 +67,7 @@ $$v_{\text{lat}}(t + \Delta t) = v_{\text{lat}}(t) \cdot \left(\text{config.drif
 
 - **High Grip / Track Setup** ($\text{driftFactor} \approx 0.86$):
   Lateral velocity decays rapidly ($14\%$ decay per $1/60\text{s}$). The car grips aggressively through corners with minimal side-slip.
-- **Balanced Arcade / Smash Cops** ($\text{driftFactor} \approx 0.93$):
+- **Balanced Arcade (Default)** ($\text{driftFactor} \approx 0.93$):
   Produces brief, controlled tire slides when cornering at high speeds before settling into grip.
 - **Extended Drift / Powerslide** ($\text{driftFactor} \approx 0.965$):
   Lateral momentum is retained across frames ($3.5\%$ decay per $1/60\text{s}$), allowing sustained drifts, donuts, and pendulum turns.
@@ -197,8 +197,8 @@ All variables are live-tunable via `useCarConfigStore` in the slide-out tuning d
 
 ### Built-in Vehicle Presets:
 
-| Parameter | Smash Cops (Default) | Street Drift | Track Grip | Heavy Muscle |
-|-----------|----------------------|--------------|------------|--------------|
+| Parameter | Arcade Default | Street Drift | Track Grip | Heavy Muscle |
+|-----------|----------------|--------------|------------|--------------|
 | **`maxSpeed`** | $460\text{ px/s}$ | $520\text{ px/s}$ | $500\text{ px/s}$ | $440\text{ px/s}$ |
 | **`acceleration`** | $480\text{ px/s}^2$ | $520\text{ px/s}^2$ | $550\text{ px/s}^2$ | $600\text{ px/s}^2$ |
 | **`reverseSpeed`** | $180\text{ px/s}$ | $200\text{ px/s}$ | $160\text{ px/s}$ | $150\text{ px/s}$ |

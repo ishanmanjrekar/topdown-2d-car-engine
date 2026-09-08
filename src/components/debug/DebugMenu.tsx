@@ -73,7 +73,7 @@ export const DebugMenu: React.FC = () => {
               Vehicle Presets
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
-              {(['smash-cops', 'street-drift', 'track-grip', 'heavy-muscle'] as PresetName[]).map((p) => (
+              {(['arcade-default', 'street-drift', 'track-grip', 'heavy-muscle'] as PresetName[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => config.loadPreset(p)}
@@ -114,7 +114,7 @@ export const DebugMenu: React.FC = () => {
                   border: 'none'
                 }}
               >
-                Rear-Touch (Smash Cops)
+                Rear-Touch (Push-Behind)
               </button>
               <button
                 onClick={() => setControlMode('keyboard')}
@@ -134,7 +134,7 @@ export const DebugMenu: React.FC = () => {
             </div>
           </div>
 
-          {/* Section: Smash Cops Rear-Touch Steering */}
+          {/* Section: Rear-Touch Push Steering */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)' }}>
               <Zap size={16} />

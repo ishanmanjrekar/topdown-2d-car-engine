@@ -268,7 +268,7 @@ export const CarCanvas: React.FC = () => {
     // Draw Skid Marks & Smoke Particles
     particles.render(ctx);
 
-    // Draw Smash Cops Rear-Touch Gizmo in World Space
+    // Draw Rear-Touch Push Gizmo in World Space
     if (config.showTouchGizmo && controller.gizmo.isActive) {
       drawRearTouchGizmo(ctx, controller.gizmo, config);
     }
@@ -303,7 +303,7 @@ export const CarCanvas: React.FC = () => {
 };
 
 /**
- * Renders the Smash Cops Rear Touch interactive push circle and tether gizmo
+ * Renders the Rear-Touch Push interactive circle and tether gizmo
  */
 function drawRearTouchGizmo(
   ctx: CanvasRenderingContext2D,
