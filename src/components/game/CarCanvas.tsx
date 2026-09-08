@@ -4,19 +4,29 @@ import { CarPhysics } from '../../engine/CarPhysics';
 import { RearTouchController } from '../../engine/RearTouchController';
 import { ParticleSystem } from '../../engine/ParticleSystem';
 import { Camera } from '../../engine/Camera';
-import { Track } from '../../engine/Track';
+import { ITrack } from '../../engine/ITrack';
+import { DemoTrack } from '../../demo/track/DemoTrack';
 import { useCarConfigStore } from '../../stores/useCarConfigStore';
 import { useGameStore } from '../../stores/useGameStore';
 
-export const CarCanvas: React.FC = () => {
+export interface CarCanvasProps {
+  track?: ITrack;
+}
+
+export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Engine singletons stored in refs to avoid recreation
-  const carRef = useRef<CarPhysics>(new CarPhysics(0, 200, -Math.PI / 2));
+  const carRef = useRef<CarPhysics>(new CarPhysics(-32, 290, -Math.PI / 2));
   const controllerRef = useRef<RearTouchController>(new RearTouchController());
   const particlesRef = useRef<ParticleSystem>(new ParticleSystem());
-  const cameraRef = useRef<Camera>(new Camera(0, 200));
-  const trackRef = useRef<Track>(new Track());
+  const cameraRef = useRef<Camera>(new Camera(-32, 290));
+  const trackRef = useRef<ITrack>(externalTrack || new DemoTrack());
+
+  // Ensure trackRef is properly updated if hot-reloaded or externalTrack changes
+  useEffect(() => {
+    trackRef.current = externalTrack || new DemoTrack();
+  }, [externalTrack]);
 
   // Input states for keyboard dev mode
   const keysRef = useRef<{ up: boolean; down: boolean; left: boolean; right: boolean }>({
@@ -40,16 +50,18 @@ export const CarCanvas: React.FC = () => {
 
   // Reset Car trigger
   const handleResetCar = useCallback(() => {
-    carRef.current.reset(0, 200, -Math.PI / 2);
+    carRef.current.reset(-32, 290, -Math.PI / 2);
     if (typeof cameraRef.current?.reset === 'function') {
-      cameraRef.current.reset(0, 200, -Math.PI / 2);
+      cameraRef.current.reset(-32, 290, -Math.PI / 2);
     } else {
-      cameraRef.current.x = 0;
-      cameraRef.current.y = 200;
+      cameraRef.current.x = -32;
+      cameraRef.current.y = 290;
       cameraRef.current.rotation = 0;
     }
     particlesRef.current.clear();
-    trackRef.current.resetCones();
+    if (typeof trackRef.current?.reset === 'function') {
+      trackRef.current.reset();
+    }
     controllerRef.current.setTouch(false);
   }, []);
 
@@ -208,10 +220,23 @@ export const CarCanvas: React.FC = () => {
       if (keysRef.current.right) steer = 1;
     }
 
-    // 2. Physics Step
-    car.update(dt, throttle, steer, config);
-    track.checkConeCollision(car.x, car.y, 26);
-    track.checkWallCollision(car);
+    // 2. Surface Physics & Vehicle Dynamics
+    const surface = track.getSurfaceAt ? track.getSurfaceAt(car.x, car.y) : { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
+    const effectiveConfig = surface.gripMultiplier < 1.0 || surface.dragMultiplier > 1.0 ? {
+      ...config,
+      driftFactor: Math.max(0.70, config.driftFactor * surface.gripMultiplier),
+      naturalDrag: Math.pow(config.naturalDrag, surface.dragMultiplier)
+    } : config;
+
+    car.update(dt, throttle, steer, effectiveConfig);
+
+    // Track dynamic props update & physical collisions
+    if (typeof track.update === 'function') {
+      track.update(dt, car);
+    }
+    if (typeof track.checkCollisions === 'function') {
+      track.checkCollisions(car, dt);
+    }
 
     // 3. Ground Displacement Speed Calculation (measured after wall & obstacle collisions)
     const actualDx = car.x - car.lastX;
@@ -229,8 +254,11 @@ export const CarCanvas: React.FC = () => {
     // Dynamic minimum speed for skids / smoke based on maxSpeed
     const minSkidSpeed = Math.min(45, config.maxSpeed * 0.18);
 
-    // 4. Skid Marks & Smoke Particles
+    // 4. Skid Marks & Smoke / Turf Particles
     const wheels = car.getWheelPositions();
+    const isGrass = surface.type === 'grass';
+    const smokeColor = isGrass ? 'rgba(34, 197, 94,' : 'rgba(210, 220, 235,';
+
     for (let i = 0; i < wheels.length; i++) {
       const w = wheels[i];
       // Rear wheels leave more skids during drift or hard braking
@@ -238,7 +266,7 @@ export const CarCanvas: React.FC = () => {
       particles.recordTireMark(i, w.x, w.y, shouldSkid, car.speed);
 
       if (car.isDrifting && car.speed > minSkidSpeed * 1.1) {
-        particles.addSmoke(w.x, w.y, car.vx, car.vy, 1);
+        particles.addSmoke(w.x, w.y, car.vx, car.vy, 1, smokeColor);
       }
     }
     particles.update(dt);

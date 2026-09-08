@@ -14,8 +14,9 @@ src/engine/
 ├── CarPhysics.ts            # Vehicle dynamics simulation (Zero dependencies)
 ├── RearTouchController.ts   # Touch-behind single-finger control math
 ├── Camera.ts                # Lookahead chase camera
-├── ParticleSystem.ts        # Tire skid marks & smoke
-└── Track.ts                 # Arena boundary & obstacles
+├── ParticleSystem.ts        # Tire skid marks, smoke & turf debris
+├── ITrack.ts                # Track contract & surface properties
+└── Track.ts                 # Standalone fallback arena (implements ITrack)
 ```
 
 ### Step 2: Minimal Game Loop (Vanilla JS / Canvas)
@@ -90,7 +91,46 @@ The core simulation, camera, touch controls, and telemetry HUD will continue fun
 
 ---
 
-## 3. Custom Vehicle Graphics & Sprites
+## 3. Custom Track & World Integration (`ITrack`)
+
+The engine decouples world geometry and collisions through the [`ITrack`](../src/engine/ITrack.ts) interface.
+While the demo includes the full **Motorsport Proving Ground** in [`src/demo/track/DemoTrack.ts`](../src/demo/track/DemoTrack.ts), you can build your own custom track, tilemap, or city grid:
+
+```ts
+import { ITrack, TrackBounds, SurfaceProperties } from './engine/ITrack';
+import { CarPhysics } from './engine/CarPhysics';
+
+export class MyCustomTrack implements ITrack {
+  public bounds: TrackBounds = { minX: -2000, maxX: 2000, minY: -2000, maxY: 2000 };
+
+  public update(dt: number, car: CarPhysics) {
+    // Step custom animated objects, hazards, or props
+  }
+
+  public checkCollisions(car: CarPhysics, dt: number) {
+    // Resolve boundaries, walls, and obstacle impulses
+  }
+
+  public getSurfaceAt(x: number, y: number): SurfaceProperties {
+    // Return 'asphalt', 'grass', 'gravel', or 'curb' for dynamic grip & drag
+    return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
+  }
+
+  public render(ctx: CanvasRenderingContext2D, camX: number, camY: number, viewW: number, viewH: number) {
+    // Render your circuit, tiles, or sprites
+  }
+
+  public reset() {
+    // Reset track props
+  }
+}
+```
+
+Simply pass your custom track into `<CarCanvas track={new MyCustomTrack()} />`.
+
+---
+
+## 4. Custom Vehicle Graphics & Sprites
 
 By default, the engine draws a sleek procedural vector sports car with glowing headlights and dynamic brake lights in `drawCar()` ([`src/components/game/CarCanvas.tsx`](../src/components/game/CarCanvas.tsx)).
 

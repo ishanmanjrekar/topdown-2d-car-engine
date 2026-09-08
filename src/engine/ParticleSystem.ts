@@ -24,7 +24,7 @@ export class ParticleSystem {
   private lastWheelPos: Map<number, { x: number; y: number }> = new Map();
   private readonly maxSkidSegments: number = 600;
 
-  public addSmoke(x: number, y: number, baseVx: number, baseVy: number, count: number = 2) {
+  public addSmoke(x: number, y: number, baseVx: number, baseVy: number, count: number = 2, colorPrefix: string = 'rgba(210, 220, 235,') {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 25 + 5;
@@ -36,7 +36,7 @@ export class ParticleSystem {
         radius: Math.random() * 4 + 3,
         alpha: 0.6,
         decay: Math.random() * 0.8 + 0.9, // alpha fade per sec
-        color: 'rgba(210, 220, 235,'
+        color: colorPrefix
       });
     }
   }

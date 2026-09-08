@@ -40,14 +40,17 @@ topdown-2d-car-engine/
 │   │   ├── RearTouchController.ts       # Rear bumper anchor push-to-drive & steer math
 │   │   ├── Camera.ts                    # Dynamic follow camera with speed lookahead and car-up rotation
 │   │   ├── ParticleSystem.ts            # Tire skid mark persistence and smoke puff simulation
-│   │   └── Track.ts                     # Asphalt arena, boundaries, slalom/skidpad cones, trees & billboards
+│   │   ├── ITrack.ts                    # Generic track & collision contract with surface properties
+│   │   └── Track.ts                     # Standalone fallback rectangular arena implementing ITrack
 │   ├── hooks/
 │   │   └── useGameLoop.ts               # requestAnimationFrame loop with clamped delta time (max 100ms)
 │   ├── stores/
 │   │   ├── useCarConfigStore.ts         # Zustand store for physics tuning constants & presets
 │   │   └── useGameStore.ts              # Zustand store for control mode, telemetry state, and UI toggles
-│   ├── demo/                            # Detachable demo presentation layer (showroom, presets)
+│   ├── demo/                            # Detachable demo presentation layer (showroom, presets, proving ground)
 │   │   ├── carPresets.ts                # 5 Car presets (Apex GT, Track Phantom, Tokyo Drifter, etc.)
+│   │   ├── track/
+│   │   │   └── DemoTrack.ts             # Motorsport Proving Ground (flying/respawn cones, solid trees, curbs)
 │   │   └── components/
 │   │       ├── CarPreview.tsx           # Standalone top-down vector vehicle preview canvas
 │   │       └── CarSelectModal.tsx       # Vehicle showroom dialog with 3-stat ratings and DRIVE action
