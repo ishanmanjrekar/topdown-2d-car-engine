@@ -3,6 +3,31 @@ import { useGameStore } from '../../stores/useGameStore';
 import { useCarConfigStore } from '../../stores/useCarConfigStore';
 import { Gauge, Settings2, RotateCcw, Flame, Car } from 'lucide-react';
 
+/**
+ * Calculates contrasting text and 3D bevel shadow based on background luminance.
+ * Fixes low-contrast issues when car colors are bright (cyan, yellow, light green).
+ */
+function getContrastInfo(hexColor: string) {
+  let hex = hexColor.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  const r = parseInt(hex.substring(0, 2), 16) || 0;
+  const g = parseInt(hex.substring(2, 4), 16) || 0;
+  const b = parseInt(hex.substring(4, 6), 16) || 0;
+
+  // Perceived luminance (ITU-R BT.709)
+  const luminance = (r * 299 + g * 587 + b * 114) / 1000;
+  const isLight = luminance >= 140;
+
+  const textColor = isLight ? '#090d16' : '#ffffff';
+  const shadowR = Math.max(0, Math.floor(r * 0.65));
+  const shadowG = Math.max(0, Math.floor(g * 0.65));
+  const shadowB = Math.max(0, Math.floor(b * 0.65));
+  const shadowColor = `rgb(${shadowR}, ${shadowG}, ${shadowB})`;
+  const borderColor = isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.4)';
+
+  return { textColor, shadowColor, borderColor, isLight };
+}
+
 export const TelemetryHUD: React.FC = () => {
   const { telemetry, toggleDebugMenu, setCarSelectOpen } = useGameStore();
   const { carColor } = useCarConfigStore();
@@ -12,6 +37,8 @@ export const TelemetryHUD: React.FC = () => {
       (window as any).__resetCarEngine();
     }
   };
+
+  const contrast = getContrastInfo(carColor);
 
   return (
     <div
@@ -25,7 +52,7 @@ export const TelemetryHUD: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '14px 14px',
+        padding: '16px 16px',
         boxSizing: 'border-box'
       }}
     >
@@ -36,156 +63,87 @@ export const TelemetryHUD: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           width: '100%',
-          gap: '8px'
+          gap: '10px'
         }}
       >
         {/* Left Column: Speedometer & Choose Car */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
-          {/* Speedometer & Primary Telemetry */}
-          <div
-            className="glass-panel"
-            style={{
-              padding: '10px 14px',
-              borderRadius: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px'
-            }}
-          >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '32px',
-                fontWeight: 900,
-                lineHeight: 1,
-                color: '#ffffff',
-                textShadow: `0 0 16px ${carColor}88`
-              }}
-            >
-              {telemetry.speedKmh}
-            </span>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                fontWeight: 700,
-                color: 'var(--accent-cyan)',
-                textTransform: 'uppercase'
-              }}
-            >
-              KM/H
-            </span>
-            {telemetry.isDrifting && (
-              <span
-                style={{
-                  marginLeft: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  background: 'rgba(255, 126, 64, 0.25)',
-                  border: '1px solid #ff7e40',
-                  color: '#ff7e40',
-                  padding: '2px 6px',
-                  borderRadius: '10px',
-                  fontSize: '10px',
-                  fontWeight: 800
-                }}
-              >
-                <Flame size={12} /> DRIFT
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto' }}>
+          {/* Speedometer & Primary Telemetry in Standout Light Mode */}
+          <div className="ui-speedo-card">
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <span className="ui-speedo-val">
+                {telemetry.speedKmh}
               </span>
-            )}
+              <span className="ui-speedo-unit">KM/H</span>
+
+              {telemetry.isDrifting && (
+                <span className="ui-badge-drift" style={{ marginLeft: '4px' }}>
+                  <Flame size={13} /> DRIFT
+                </span>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                fontSize: '11px',
+                marginTop: '2px'
+              }}
+            >
+              <span className="ui-stat-label">
+                SLIP <b className="ui-stat-value" style={{ color: telemetry.slipAngle > 15 ? 'var(--color-coral)' : '#0f172a' }}>{telemetry.slipAngle}°</b>
+              </span>
+              <span className="ui-stat-label">
+                G <b className="ui-stat-value">{telemetry.lateralG}G</b>
+              </span>
+              <span className="ui-stat-label">
+                FPS <b className="ui-stat-value" style={{ color: 'var(--color-mint)' }}>{telemetry.fps}</b>
+              </span>
+            </div>
           </div>
 
-          <div
+          {/* Bigger, Chunky Choose Car Button with High-Contrast Text & 3D Bevel */}
+          <button
+            onClick={() => setCarSelectOpen(true)}
+            className="btn-chunky btn-chunky-md"
+            title="Choose Vehicle (C)"
             style={{
-              display: 'flex',
-              gap: '8px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              color: 'var(--text-muted)'
+              background: carColor,
+              color: contrast.textColor,
+              borderColor: contrast.borderColor,
+              boxShadow: `0 4px 0 ${contrast.shadowColor}, 0 8px 18px rgba(0, 0, 0, 0.3)`,
+              width: 'fit-content'
             }}
           >
-            <span>SLIP: <b style={{ color: telemetry.slipAngle > 15 ? '#ff7e40' : '#ffffff' }}>{telemetry.slipAngle}°</b></span>
-            <span>G: <b style={{ color: '#ffffff' }}>{telemetry.lateralG}G</b></span>
-            <span>FPS: <b style={{ color: 'var(--accent-neon)' }}>{telemetry.fps}</b></span>
-          </div>
+            <Car size={18} color={contrast.textColor} />
+            <span>Choose Car</span>
+          </button>
         </div>
 
-        {/* Choose Car Button directly below Speedometer */}
-        <button
-          onClick={() => setCarSelectOpen(true)}
-          className="glass-panel"
-          title="Choose Vehicle (C)"
-          style={{
-            padding: '7px 12px',
-            borderRadius: '11px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            cursor: 'pointer',
-            color: '#ffffff',
-            border: `1px solid ${carColor}66`,
-            background: 'rgba(15, 23, 42, 0.75)',
-            boxShadow: `0 0 14px ${carColor}26`,
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 700,
-            letterSpacing: '0.6px',
-            textTransform: 'uppercase',
-            width: 'fit-content',
-            transition: 'all 0.15s ease'
-          }}
-          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
-          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-        >
-          <Car size={14} color={carColor} />
-          <span>Choose Car</span>
-        </button>
-      </div>
-
-      {/* Action Controls (Reset, Tune) */}
-        <div style={{ display: 'flex', gap: '6px', pointerEvents: 'auto', flexShrink: 0 }}>
+        {/* Action Controls (Reset, Tune) */}
+        <div style={{ display: 'flex', gap: '10px', pointerEvents: 'auto', flexShrink: 0 }}>
           <button
             onClick={handleReset}
-            className="glass-panel"
+            className="btn-chunky btn-chunky-ghost btn-chunky-icon"
+            style={{ width: '46px', height: '46px' }}
             title="Reset Vehicle (R)"
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              border: '1px solid var(--border-subtle)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={19} />
           </button>
 
           <button
             onClick={toggleDebugMenu}
-            className="glass-panel"
+            className="btn-chunky btn-chunky-sky"
             title="Car Setup & Debug Menu"
             style={{
-              padding: '0 12px',
-              height: '38px',
-              borderRadius: '10px',
-              border: '1px solid var(--accent-cyan)',
-              background: 'rgba(0, 242, 254, 0.15)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '11px'
+              height: '46px',
+              padding: '0 16px',
+              fontSize: '14px',
+              gap: '8px'
             }}
           >
-            <Settings2 size={16} color="var(--accent-cyan)" />
+            <Settings2 size={18} />
             <span>TUNING</span>
           </button>
         </div>
@@ -197,23 +155,11 @@ export const TelemetryHUD: React.FC = () => {
           marginTop: 'auto',
           alignSelf: 'center',
           pointerEvents: 'none',
-          marginBottom: '20px'
+          marginBottom: '16px'
         }}
       >
-        <div
-          className="glass-pill"
-          style={{
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <Gauge size={13} color="var(--accent-cyan)" />
+        <div className="ui-guidance-pill">
+          <Gauge size={15} color="var(--color-sky)" />
           <span><b>Rear-Touch:</b> Drag behind car to push &amp; steer</span>
         </div>
       </div>

@@ -153,7 +153,7 @@ Exposed in `useCarConfigStore` and live-adjustable in `DebugMenu.tsx`:
 | `rearSteerMaxOffset` | `number` | `85` | 40 – 150 px | Lateral offset required to reach 100% steering lock |
 | `rearDeadzone` | `number` | `10` | 0 – 30 px | Center deadband radius to prevent wobble when driving straight |
 | `invertSteer` | `boolean` | `false` | `true` / `false` | Invert lateral steering direction |
-| `showTouchGizmo` | `boolean` | `true` | `true` / `false` | Toggle rendering of the push tether ring and target lines |
+| `showTouchGizmo` | `boolean` | `false` | `true` / `false` | Toggle rendering of the push tether ring and target lines (off by default) |
 
 ### Preset Defaults for Rear Touch:
 - **Arcade Default**: Anchor $55\text{ px}$, Push Radius $110\text{ px}$, Steer Offset $85\text{ px}$, Deadzone $10\text{ px}$.

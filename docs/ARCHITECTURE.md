@@ -9,10 +9,11 @@
 ```
 topdown-2d-car-engine/
 ├── docs/                                # Engine specifications & documentation suite
-│   ├── design-doc.md                    # Overarching system design & architecture roadmap
+│   ├── DESIGN_DOC.md                    # Overarching system design & architecture roadmap
 │   ├── ARCHITECTURE.md                  # System architecture, pipeline, and platform design (this file)
 │   ├── VEHICLE_PHYSICS.md               # 2D vehicle dynamics, drift mechanics, and presets
 │   ├── CONTROLS_REAR_TOUCH.md           # Rear-touch push-behind steering math & touch unprojection
+│   ├── UI_ART_DIRECTION.md              # Fresh Pop & Bright Minimalist art direction, fonts & 60s re-skinning
 │   ├── INTEGRATION_GUIDE.md             # Plug-and-play decoupling & custom sprite integration guide
 │   └── AGENTS.md                        # AI coding assistant invariants & prompt cheatsheet
 ├── scripts/                             # Automated portable build & environment scripts
@@ -51,7 +52,9 @@ topdown-2d-car-engine/
 │   │       ├── CarPreview.tsx           # Standalone top-down vector vehicle preview canvas
 │   │       └── CarSelectModal.tsx       # Vehicle showroom dialog with 3-stat ratings and DRIVE action
 │   └── styles/
-│       └── global.css                   # Theme tokens, glassmorphism CSS, and touch-action resets
+│       ├── theme.css                    # Centralized theme tokens (Lilita One, Be Vietnam Pro, chunky buttons)
+│       ├── ui-components.css            # Modular UI classes (.btn-chunky, .ui-card, .ui-modal-sheet)
+│       └── global.css                   # Viewport resets, safe areas, and touch-action handling
 ├── capacitor.config.ts                  # Capacitor native runtime configuration
 ├── package.json                         # Dependencies (React 19, Zustand 5, Framer Motion 12, Lucide)
 ├── tsconfig.json                        # TypeScript root project references

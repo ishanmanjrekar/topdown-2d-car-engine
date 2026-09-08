@@ -26,12 +26,19 @@ src/
 │   ├── debug/DebugMenu.tsx      # Physics slider drawer
 │   └── common/BoundingBox.tsx   # Letterboxed responsive aspect ratio wrapper
 │
+├── styles/                      # MODULAR THEME & DESIGN SYSTEM
+│   ├── theme.css                # Centralized tokens (Lilita One, Be Vietnam Pro, colors, bevels)
+│   ├── ui-components.css        # Reusable classes (.btn-chunky, .ui-card, .ui-modal-sheet)
+│   └── global.css               # Viewport resets and touch-action handling
+│
 └── demo/                        # DETACHABLE DEMO LAYER (Zero core dependencies)
     ├── carPresets.ts            # 5 Car presets (Apex GT, Track Phantom, Tokyo Drifter, etc.)
     └── components/
         ├── CarPreview.tsx       # Standalone canvas top-down vector vehicle preview
         └── CarSelectModal.tsx   # Showroom dialog with 3-stat ratings and DRIVE button
 ```
+
+> **UI Art Direction**: Detailed theming guide and 60s re-skinning documentation is located in [`docs/UI_ART_DIRECTION.md`](./UI_ART_DIRECTION.md).
 
 ---
 

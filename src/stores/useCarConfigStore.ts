@@ -55,9 +55,9 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
     rearSteerMaxOffset: 85,
     rearDeadzone: 10,
     invertSteer: false,
-    showDebugVectors: true,
+    showDebugVectors: false,
     showTireTracks: true,
-    showTouchGizmo: true,
+    showTouchGizmo: false,
     carColor: '#00f2fe',
     accentColor: '#ffffff',
     spoilerType: 'ducktail',
@@ -79,9 +79,9 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
     rearSteerMaxOffset: 90,
     rearDeadzone: 8,
     invertSteer: false,
-    showDebugVectors: true,
+    showDebugVectors: false,
     showTireTracks: true,
-    showTouchGizmo: true,
+    showTouchGizmo: false,
     carColor: '#ff7e40'
   },
   'track-grip': {
@@ -98,9 +98,9 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
     rearSteerMaxOffset: 75,
     rearDeadzone: 10,
     invertSteer: false,
-    showDebugVectors: true,
+    showDebugVectors: false,
     showTireTracks: true,
-    showTouchGizmo: true,
+    showTouchGizmo: false,
     carColor: '#39ff14'
   },
   'heavy-muscle': {
@@ -117,9 +117,9 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
     rearSteerMaxOffset: 95,
     rearDeadzone: 12,
     invertSteer: false,
-    showDebugVectors: true,
+    showDebugVectors: false,
     showTireTracks: true,
-    showTouchGizmo: true,
+    showTouchGizmo: false,
     carColor: '#ff3366'
   }
 };

@@ -1,26 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import './theme.css';
+@import './ui-components.css';
 
 :root {
-  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* Premium Cyberpunk / Automotive Racing Palette */
-  --bg-dark: #090a0f;
-  --bg-panel: rgba(18, 21, 31, 0.85);
-  --bg-card: rgba(26, 31, 46, 0.7);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(0, 242, 254, 0.4);
-
-  --accent-cyan: #00f2fe;
+  /* Retain legacy variable references for backward compatibility */
+  --accent-cyan: var(--color-sky);
   --accent-blue: #4facfe;
-  --accent-neon: #39ff14;
-  --accent-orange: #ff7e40;
-  --accent-red: #ff3366;
-  --accent-amber: #ffb703;
+  --accent-neon: var(--color-mint);
+  --accent-orange: var(--color-coral);
+  --accent-red: var(--color-coral);
+  --accent-amber: var(--color-amber);
 
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --text-main: var(--theme-text-bright);
+  --text-muted: var(--theme-text-muted);
+  --text-dim: var(--theme-text-dim);
 }
 
 /* Scrollbar Neutralization */
@@ -33,8 +25,8 @@ body {
   overflow: hidden;
   scrollbar-width: none;
   background-color: var(--bg-dark);
-  color: var(--text-main);
-  font-family: var(--font-display);
+  color: var(--theme-text-bright);
+  font-family: var(--theme-font-body);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }

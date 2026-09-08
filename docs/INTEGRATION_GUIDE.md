@@ -136,7 +136,17 @@ You can dynamically modify `config.driftFactor` and `config.naturalDrag` based o
 
 ---
 
-## 5. Headless Multiplayer Server Support
+---
+
+## 5. UI Customization & Re-Theming
+
+The presentation layer is designed to be effortlessly customized or replaced:
+- **60-Second Re-Skinning**: Customize all fonts, colors, border radii, and 3D button bevels by editing [`src/styles/theme.css`](../src/styles/theme.css). See **[UI Art Direction & Theming Guide (`docs/UI_ART_DIRECTION.md`)](./UI_ART_DIRECTION.md)**.
+- **Custom UI / Headless HUD**: Remove or replace `<TelemetryHUD />`, `<DebugMenu />`, and `<CarSelectModal />` in [`src/App.tsx`](../src/App.tsx) and bind your custom React/HTML components to `useGameStore` and `useCarConfigStore`.
+
+---
+
+## 6. Headless Multiplayer Server Support
 
 Because `CarPhysics.ts` has zero DOM or canvas dependencies:
 - Run authoritative vehicle physics on a Node.js / Bun / WebSocket game server at 60Hz.

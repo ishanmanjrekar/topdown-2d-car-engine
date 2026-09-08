@@ -22,57 +22,95 @@ export const DebugMenu: React.FC = () => {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(5, 7, 12, 0.75)',
+          background: 'rgba(15, 23, 42, 0.4)',
           backdropFilter: 'blur(8px)',
           zIndex: 100,
           display: 'flex',
           justifyContent: 'flex-end'
         }}
+        onClick={() => setDebugMenuOpen(false)}
       >
         <motion.div
           initial={{ x: 420 }}
           animate={{ x: 0 }}
           exit={{ x: 420 }}
           transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-          className="glass-panel"
+          className="ui-drawer-sheet"
           style={{
             width: '100%',
             maxWidth: '400px',
             height: '100%',
-            overflowY: 'auto',
-            padding: '24px',
+            borderRadius: '26px 0 0 26px',
+            overflow: 'hidden',
+            padding: 0,
             boxSizing: 'border-box',
-            borderLeft: '1px solid var(--border-active)',
+            borderRight: 'none',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
+            flexDirection: 'column'
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Frozen / Sticky Top Header Pane */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '18px 24px',
+              borderBottom: '1.5px solid rgba(0, 0, 0, 0.08)',
+              background: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(24px)',
+              flexShrink: 0,
+              zIndex: 10
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sliders size={20} color="var(--accent-cyan)" />
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, letterSpacing: '0.5px' }}>
+              <Sliders size={22} color="#0284c7" />
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: '22px',
+                  fontFamily: 'var(--theme-font-display)',
+                  letterSpacing: '0.6px',
+                  color: '#0f172a'
+                }}
+              >
                 CAR SETUP & TUNING
               </h2>
             </div>
             <button
               onClick={() => setDebugMenuOpen(false)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                padding: '4px'
-              }}
+              className="btn-chunky btn-chunky-light btn-chunky-circle"
+              style={{ width: '36px', height: '36px' }}
+              title="Close (Esc)"
             >
-              <X size={20} />
+              <X size={18} color="#0f172a" />
             </button>
           </div>
 
-          {/* Preset Buttons */}
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          {/* Scrollable Settings Body */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}
+          >
+            {/* Preset Buttons */}
+            <div>
+            <label
+              style={{
+                fontSize: '11.5px',
+                fontWeight: 700,
+                fontFamily: 'var(--theme-font-body)',
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px'
+              }}
+            >
               Vehicle Presets
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
@@ -80,16 +118,14 @@ export const DebugMenu: React.FC = () => {
                 <button
                   key={p}
                   onClick={() => config.loadPreset(p)}
-                  className="glass-pill"
+                  className="btn-chunky btn-chunky-sm btn-chunky-light"
                   style={{
                     padding: '8px 10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
+                    fontFamily: 'var(--theme-font-body)',
                     fontWeight: 700,
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    border: '1px solid var(--border-subtle)'
+                    letterSpacing: '0.2px',
+                    textTransform: 'capitalize'
                   }}
                 >
                   {p.replace('-', ' ')}
@@ -98,50 +134,65 @@ export const DebugMenu: React.FC = () => {
             </div>
           </div>
 
-          {/* Control Mode */}
+          {/* Control Scheme */}
           <div>
-            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <label
+              style={{
+                fontSize: '11.5px',
+                fontWeight: 700,
+                fontFamily: 'var(--theme-font-body)',
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px'
+              }}
+            >
               Control Scheme
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
               <button
                 onClick={() => setControlMode('rear-touch')}
+                className={`btn-chunky btn-chunky-sm ${controlMode === 'rear-touch' ? 'btn-chunky-sky' : 'btn-chunky-light'}`}
                 style={{
-                  padding: '8px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
+                  fontSize: '11.5px',
+                  padding: '8px 6px',
+                  fontFamily: 'var(--theme-font-body)',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  background: controlMode === 'rear-touch' ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.06)',
-                  color: controlMode === 'rear-touch' ? '#000000' : '#ffffff',
-                  border: 'none'
+                  letterSpacing: '0.2px'
                 }}
               >
-                Rear-Touch (Push-Behind)
+                Rear-Touch
               </button>
               <button
                 onClick={() => setControlMode('keyboard')}
+                className={`btn-chunky btn-chunky-sm ${controlMode === 'keyboard' ? 'btn-chunky-sky' : 'btn-chunky-light'}`}
                 style={{
-                  padding: '8px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
+                  fontSize: '11.5px',
+                  padding: '8px 6px',
+                  fontFamily: 'var(--theme-font-body)',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  background: controlMode === 'keyboard' ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.06)',
-                  color: controlMode === 'keyboard' ? '#000000' : '#ffffff',
-                  border: 'none'
+                  letterSpacing: '0.2px'
                 }}
               >
-                Keyboard (WASD/Arrows)
+                Keyboard
               </button>
             </div>
           </div>
 
           {/* Section: Rear-Touch Push Steering */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)' }}>
+          <div
+            className="ui-card-inset"
+            style={{
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284c7' }}>
               <Zap size={16} />
-              <span style={{ fontSize: '13px', fontWeight: 800 }}>Rear-Touch Push Tuning</span>
+              <span style={{ fontSize: '13px', fontFamily: 'var(--theme-font-body)', fontWeight: 800, color: '#0f172a' }}>
+                Rear-Touch Push Tuning
+              </span>
             </div>
 
             <SliderControl
@@ -185,20 +236,33 @@ export const DebugMenu: React.FC = () => {
             />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Invert Steering Push</span>
+              <span style={{ fontSize: '12px', fontFamily: 'var(--theme-font-body)', color: '#475569', fontWeight: 600 }}>
+                Invert Steering Push
+              </span>
               <input
                 type="checkbox"
                 checked={config.invertSteer}
                 onChange={(e) => config.updateConfig({ invertSteer: e.target.checked })}
+                style={{ accentColor: '#0284c7', width: '16px', height: '16px', cursor: 'pointer' }}
               />
             </div>
           </div>
 
           {/* Section: Vehicle Dynamics */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-orange)' }}>
+          <div
+            className="ui-card-inset"
+            style={{
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff4757' }}>
               <Shield size={16} />
-              <span style={{ fontSize: '13px', fontWeight: 800 }}>Physics &amp; Handling</span>
+              <span style={{ fontSize: '13px', fontFamily: 'var(--theme-font-body)', fontWeight: 800, color: '#0f172a' }}>
+                Physics &amp; Handling
+              </span>
             </div>
 
             <SliderControl
@@ -253,10 +317,20 @@ export const DebugMenu: React.FC = () => {
           </div>
 
           {/* Section: Visuals */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-neon)' }}>
+          <div
+            className="ui-card-inset"
+            style={{
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }}>
               <Sparkles size={16} />
-              <span style={{ fontSize: '13px', fontWeight: 800 }}>Visual Debugging</span>
+              <span style={{ fontSize: '13px', fontFamily: 'var(--theme-font-body)', fontWeight: 800, color: '#0f172a' }}>
+                Visual Debugging
+              </span>
             </div>
 
             <ToggleControl
@@ -279,24 +353,18 @@ export const DebugMenu: React.FC = () => {
           {/* Reset All */}
           <button
             onClick={() => config.resetToDefault()}
-            className="glass-pill"
+            className="btn-chunky btn-chunky-coral"
             style={{
               marginTop: 'auto',
               padding: '12px',
-              borderRadius: '10px',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-muted)',
               fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
+              width: '100%'
             }}
           >
-            <RefreshCw size={15} /> Reset All Parameters
+            <RefreshCw size={15} />
+            <span>Reset All Parameters</span>
           </button>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -315,9 +383,16 @@ interface SliderProps {
 
 const SliderControl: React.FC<SliderProps> = ({ label, value, min, max, step, unit, onChange }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#ffffff' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: '12px',
+        fontFamily: 'var(--theme-font-body)'
+      }}
+    >
+      <span style={{ color: '#475569', fontWeight: 600 }}>{label}</span>
+      <span style={{ fontFamily: 'var(--theme-font-mono)', fontWeight: 700, color: '#0f172a' }}>
         {value} {unit}
       </span>
     </div>
@@ -328,7 +403,7 @@ const SliderControl: React.FC<SliderProps> = ({ label, value, min, max, step, un
       step={step}
       value={value}
       onChange={(e) => onChange(parseFloat(e.target.value))}
-      style={{ accentColor: 'var(--accent-cyan)', width: '100%' }}
+      style={{ accentColor: '#0284c7', width: '100%', cursor: 'pointer' }}
     />
   </div>
 );
@@ -338,8 +413,21 @@ const ToggleControl: React.FC<{ label: string; checked: boolean; onChange: (v: b
   checked,
   onChange
 }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-    <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      fontSize: '12px',
+      fontFamily: 'var(--theme-font-body)'
+    }}
+  >
+    <span style={{ color: '#475569', fontWeight: 600 }}>{label}</span>
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      style={{ accentColor: '#0284c7', width: '16px', height: '16px', cursor: 'pointer' }}
+    />
   </div>
 );

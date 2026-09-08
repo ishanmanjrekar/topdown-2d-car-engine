@@ -1,0 +1,277 @@
+/**
+ * Top-Down 2D Car Engine — Modular UI Component Styles 🧱
+ * 
+ * Clean, semantic CSS classes for HUD cards, chunky 3D buttons,
+ * dialog sheets, stat segments, and controls.
+ */
+
+/* ==========================================================================
+   1. BASE CHUNKY 3D BUTTONS
+   ========================================================================== */
+.btn-chunky {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  font-family: var(--theme-font-action);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--theme-btn-letter-spacing);
+  text-transform: uppercase;
+  color: #ffffff;
+  border-radius: var(--theme-btn-radius);
+  border: var(--theme-btn-border-width) solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 var(--theme-btn-bevel) 0 var(--btn-shadow, rgba(0, 0, 0, 0.4));
+  transform: translateY(0);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.08s cubic-bezier(0.2, 0.8, 0.2, 1),
+              filter 0.15s ease;
+  outline: none;
+}
+
+.btn-chunky:hover {
+  filter: brightness(1.08);
+}
+
+.btn-chunky:active {
+  transform: translateY(var(--theme-btn-press));
+  box-shadow: 0 var(--theme-btn-pressed-bevel) 0 var(--btn-shadow, rgba(0, 0, 0, 0.4));
+}
+
+/* Color Themes */
+.btn-chunky-coral {
+  background: var(--color-coral);
+  --btn-shadow: var(--color-coral-shadow);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-chunky-sky {
+  background: var(--color-sky);
+  --btn-shadow: var(--color-sky-shadow);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-chunky-amber {
+  background: var(--color-amber);
+  --btn-shadow: var(--color-amber-shadow);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.btn-chunky-mint {
+  background: var(--color-mint);
+  --btn-shadow: var(--color-mint-shadow);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-chunky-charcoal {
+  background: var(--color-charcoal);
+  --btn-shadow: var(--color-charcoal-shadow);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.btn-chunky-ghost {
+  background: var(--color-ghost-bg);
+  --btn-shadow: var(--color-ghost-shadow);
+  border-color: var(--color-ghost-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Chunky Light Button (Clean white button with soft gray bevel and dark icon/text) */
+.btn-chunky-light {
+  background: #ffffff;
+  --btn-shadow: #cbd5e1;
+  border-color: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 var(--theme-btn-bevel) 0 var(--btn-shadow), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Icon-only Chunky Square */
+.btn-chunky-icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Circular Chunky Navigation Button */
+.btn-chunky-circle {
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Medium / Standard Chunky Action Button (e.g. Choose Car) */
+.btn-chunky-md {
+  padding: 11px 20px;
+  font-size: 15px;
+  letter-spacing: 1px;
+  border-radius: 16px;
+  --theme-btn-bevel: 4px;
+  --theme-btn-press: 3px;
+}
+
+/* Large Hero Drive Button */
+.btn-chunky-lg {
+  padding: 15px 26px;
+  font-size: 17px;
+  border-radius: calc(var(--theme-btn-radius) + 3px);
+  letter-spacing: 1.2px;
+}
+
+/* Small / Compact Pill Button */
+.btn-chunky-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: calc(var(--theme-btn-radius) - 3px);
+  --theme-btn-bevel: 3px;
+  --theme-btn-press: 2px;
+}
+
+/* ==========================================================================
+   2. FROSTED CARDS & MODAL SHEETS (OPTION A BRIGHT FROSTED)
+   ========================================================================== */
+.ui-card {
+  background: var(--theme-card-bg);
+  backdrop-filter: blur(var(--theme-card-blur));
+  -webkit-backdrop-filter: blur(var(--theme-card-blur));
+  border: 1px solid var(--theme-card-border);
+  border-radius: var(--theme-card-radius);
+  box-shadow: var(--theme-card-shadow);
+  box-sizing: border-box;
+}
+
+.ui-modal-sheet {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 2px solid #ffffff;
+  border-radius: 26px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28), 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.ui-drawer-sheet {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 2px solid #ffffff;
+  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.ui-card-inset {
+  background: rgba(241, 245, 249, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* ==========================================================================
+   3. SPEEDOMETER & TELEMETRY (FRESH LIGHT MODE STANDOUT)
+   ========================================================================== */
+.ui-speedo-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 2px solid #ffffff;
+  border-radius: 20px;
+  padding: 12px 18px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ui-speedo-val {
+  font-family: var(--theme-font-display);
+  font-size: 42px;
+  line-height: 0.95;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+}
+
+.ui-speedo-unit {
+  font-family: var(--theme-font-action);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #0284c7;
+  text-transform: uppercase;
+}
+
+.ui-stat-label {
+  font-family: var(--theme-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ui-stat-value {
+  font-family: var(--theme-font-mono);
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Drift Badge */
+.ui-badge-drift {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-coral);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--theme-font-action);
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  box-shadow: 0 2px 0 var(--color-coral-shadow), 0 0 12px var(--color-coral-glow);
+  animation: pulseBadge 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Bottom Guidance Pill */
+.ui-guidance-pill {
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-family: var(--theme-font-body);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--theme-text-sub);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   4. STAT BARS (CHUNKY PILL SEGMENTS)
+   ========================================================================== */
+.ui-stat-seg {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-stat-seg.filled {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}

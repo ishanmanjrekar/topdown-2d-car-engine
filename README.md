@@ -14,10 +14,11 @@
 
 Detailed mathematical formulations, architecture diagrams, and tuning dictionaries are documented in the [`docs/`](./docs) folder:
 
-- **[System Design Document (`docs/design-doc.md`)](./docs/design-doc.md)**: Overarching architecture roadmap, component contracts, lifecycle, and documentation directory.
+- **[System Design Document (`docs/DESIGN_DOC.md`)](./docs/DESIGN_DOC.md)**: Overarching architecture roadmap, component contracts, lifecycle, and documentation directory.
 - **[System Architecture (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)**: Full game loop pipeline, dynamic follow camera with lookahead and car-up rotation, responsive viewport scaling (`BoundingBox`), multi-layer canvas rendering, and state management.
 - **[2D Vehicle Physics Model (`docs/VEHICLE_PHYSICS.md`)](./docs/VEHICLE_PHYSICS.md)**: Velocity decomposition into local coordinates, powertrain drive & active braking, lateral drift friction decay, speed-dependent steering authority, arena wall collisions, telemetry equations, and preset specifications.
 - **[Rear-Touch Push Steering (`docs/CONTROLS_REAR_TOUCH.md`)](./docs/CONTROLS_REAR_TOUCH.md)**: Mathematical derivation of rear bumper anchor projection, push throttle dynamics, counter-rotational steer torque, touch unprojection through camera transforms, and interactive visual gizmo.
+- **[UI Art Direction & Theming (`docs/UI_ART_DIRECTION.md`)](./docs/UI_ART_DIRECTION.md)**: Fresh Pop & Bright Minimalist art direction, Lilita One chunky buttons, Be Vietnam Pro typography, 3D tactile button physics, and 60-second single-file re-skinning.
 - **[Plug-and-Play Integration Guide (`docs/INTEGRATION_GUIDE.md`)](./docs/INTEGRATION_GUIDE.md)**: How to extract the core engine, strip the demo showroom layer, replace procedural cars with custom sprites, and run headlessly on multiplayer servers.
 - **[AI Coding Agent Invariants (`docs/AGENTS.md`)](./docs/AGENTS.md)**: Context card, coordinate system invariants, and copy-paste prompt templates for LLM pair-programmers (Antigravity, Cursor, Copilot, Claude Code).
 

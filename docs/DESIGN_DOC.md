@@ -28,6 +28,7 @@ This repository maintains modular, comprehensive documentation across the [`docs
 | 📐 **[System Architecture (`docs/ARCHITECTURE.md`)](./ARCHITECTURE.md)** | Game loop pipeline, canvas layering, camera projection matrix, BoundingBox responsive scaling, and state stores. | Game engine integrators & UI developers |
 | 🏎️ **[Vehicle Physics Model (`docs/VEHICLE_PHYSICS.md`)](./VEHICLE_PHYSICS.md)** | Mathematical derivation of longitudinal drive, active braking, lateral drift decay, tire scrub, and 3-stat formula. | Physics engineers & gameplay tuners |
 | 🕹️ **[Rear-Touch Controls (`docs/CONTROLS_REAR_TOUCH.md`)](./CONTROLS_REAR_TOUCH.md)** | Anchor point projection, touch delta unprojection, push throttle, pivot steering, and deadzone math. | Mobile UX & input designers |
+| 🎨 **[UI Art Direction & Theming (`docs/UI_ART_DIRECTION.md`)](./UI_ART_DIRECTION.md)** | Fresh Pop & Bright Minimalist art direction, Lilita One chunky buttons, Be Vietnam Pro typography, 3D button physics, and 60-second single-file re-skinning. | UI/UX designers, theme authors & frontend devs |
 | 🔌 **[Plug-and-Play Integration Guide (`docs/INTEGRATION_GUIDE.md`)](./INTEGRATION_GUIDE.md)** | Step-by-step guide to embed the engine, strip the demo layer, replace procedural cars with sprites, and build custom tracks. | Developers integrating the engine |
 | 🤖 **[AI Coding Agent Cheatsheet (`docs/AGENTS.md`)](./AGENTS.md)** | AI context card with code invariants, file map, do's & don'ts, and ready-to-use prompt templates. | LLMs, Agentic pair programmers |
 

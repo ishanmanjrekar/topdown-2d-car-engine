@@ -5,6 +5,22 @@ import { CAR_PRESETS, CarPreset, applyCarPreset } from '../carPresets';
 import { CarPreview } from './CarPreview';
 import { X, ChevronLeft, ChevronRight, Gauge, Zap, Compass, Check } from 'lucide-react';
 
+function getContrastInfo(hexColor: string) {
+  let hex = hexColor.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  const r = parseInt(hex.substring(0, 2), 16) || 0;
+  const g = parseInt(hex.substring(2, 4), 16) || 0;
+  const b = parseInt(hex.substring(4, 6), 16) || 0;
+  const luminance = (r * 299 + g * 587 + b * 114) / 1000;
+  const textColor = luminance >= 140 ? '#090d16' : '#ffffff';
+  const shadowR = Math.max(0, Math.floor(r * 0.65));
+  const shadowG = Math.max(0, Math.floor(g * 0.65));
+  const shadowB = Math.max(0, Math.floor(b * 0.65));
+  const shadowColor = `rgb(${shadowR}, ${shadowG}, ${shadowB})`;
+  const borderColor = luminance >= 140 ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.4)';
+  return { textColor, shadowColor, borderColor };
+}
+
 export const CarSelectModal: React.FC = () => {
   const { carSelectOpen, setCarSelectOpen } = useGameStore();
   const currentPresetId = useCarConfigStore((s) => s.presetId);
@@ -57,6 +73,8 @@ export const CarSelectModal: React.FC = () => {
     setSelectedIndex((prev) => (prev < CAR_PRESETS.length - 1 ? prev + 1 : 0));
   };
 
+  const contrast = getContrastInfo(activeCar.visuals.primaryColor);
+
   return (
     <div
       style={{
@@ -65,9 +83,9 @@ export const CarSelectModal: React.FC = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(5, 10, 20, 0.78)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -77,22 +95,20 @@ export const CarSelectModal: React.FC = () => {
       }}
       onClick={() => setCarSelectOpen(false)}
     >
-      {/* Modal Container */}
+      {/* Option A Bright Frosted Modal Container */}
       <div
-        className="glass-panel"
+        className="ui-modal-sheet"
         style={{
           width: '100%',
           maxWidth: '430px',
           maxHeight: '94%',
           overflowY: 'auto',
-          borderRadius: '20px',
-          padding: '20px',
-          boxSizing: 'border-box',
+          padding: '24px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          boxShadow: `0 0 35px ${activeCar.visuals.primaryColor}33`,
-          border: `1px solid ${activeCar.visuals.primaryColor}55`,
+          boxShadow: `0 24px 65px rgba(0, 0, 0, 0.25), 0 0 35px ${activeCar.visuals.primaryColor}33`,
+          border: '2px solid #ffffff',
           pointerEvents: 'auto',
           animation: 'fadeIn 0.2s ease-out'
         }}
@@ -109,9 +125,10 @@ export const CarSelectModal: React.FC = () => {
           <div>
             <div
               style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--theme-font-body)',
                 fontSize: '11px',
-                color: 'var(--text-muted)',
+                fontWeight: 700,
+                color: '#64748b',
                 letterSpacing: '1.5px',
                 textTransform: 'uppercase'
               }}
@@ -121,10 +138,10 @@ export const CarSelectModal: React.FC = () => {
             <h2
               style={{
                 margin: 0,
-                fontSize: '22px',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                color: '#ffffff',
+                fontSize: '26px',
+                fontFamily: 'var(--theme-font-display)',
+                letterSpacing: '0.6px',
+                color: '#0f172a',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
@@ -136,20 +153,11 @@ export const CarSelectModal: React.FC = () => {
 
           <button
             onClick={() => setCarSelectOpen(false)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              cursor: 'pointer'
-            }}
+            className="btn-chunky btn-chunky-light btn-chunky-circle"
+            title="Close"
+            style={{ width: '36px', height: '36px' }}
           >
-            <X size={18} />
+            <X size={18} color="#0f172a" />
           </button>
         </div>
 
@@ -158,24 +166,29 @@ export const CarSelectModal: React.FC = () => {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span
               style={{
-                background: `${activeCar.visuals.primaryColor}25`,
-                border: `1px solid ${activeCar.visuals.primaryColor}`,
-                color: activeCar.visuals.primaryColor,
-                fontSize: '10px',
-                fontWeight: 800,
-                fontFamily: 'var(--font-mono)',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                letterSpacing: '0.8px'
+                background: activeCar.visuals.primaryColor,
+                color: contrast.textColor,
+                fontSize: '11px',
+                fontWeight: 700,
+                fontFamily: 'var(--theme-font-body)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                letterSpacing: '0.6px',
+                textTransform: 'uppercase',
+                boxShadow: `0 2px 0 ${contrast.shadowColor}`,
+                textShadow: contrast.textColor === '#ffffff' ? '0 1px 2px rgba(0, 0, 0, 0.4)' : 'none',
+                display: 'inline-flex',
+                alignItems: 'center'
               }}
             >
               {activeCar.badge}
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: 'var(--text-muted)'
+                fontFamily: 'var(--theme-font-body)',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#475569'
               }}
             >
               {activeCar.archetype}
@@ -185,76 +198,69 @@ export const CarSelectModal: React.FC = () => {
           <p
             style={{
               margin: '4px 0 0 0',
+              fontFamily: 'var(--theme-font-body)',
               fontSize: '12px',
-              color: 'var(--text-muted)',
-              lineHeight: 1.4
+              color: '#334155',
+              lineHeight: 1.45
             }}
           >
             {activeCar.description}
           </p>
         </div>
 
-        {/* Carousel & Visual Car Showcase */}
+        {/* Carousel & Visual Car Showcase Spotlight Podium */}
         <div
+          className="ui-card-inset"
           style={{
             position: 'relative',
-            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 23, 0.8) 100%)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            padding: '12px 6px',
+            background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
+            borderRadius: '20px',
+            border: '2px solid #ffffff',
+            padding: '14px 8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '135px'
+            minHeight: '140px',
+            boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.04)'
           }}
         >
           {/* Left Arrow */}
           <button
             onClick={handlePrev}
             aria-label="Previous car"
+            className="btn-chunky btn-chunky-light btn-chunky-circle"
             style={{
               position: 'absolute',
-              left: '8px',
+              left: '12px',
               zIndex: 2,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              cursor: 'pointer'
+              width: '38px',
+              height: '38px'
             }}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} color="#0f172a" />
           </button>
 
-          {/* Car Preview Canvas */}
-          <CarPreview car={activeCar} width={220} height={130} />
+          {/* Interactive 2D Top-Down Car Preview Vector */}
+          <CarPreview
+            car={activeCar}
+            width={180}
+            height={135}
+          />
 
           {/* Right Arrow */}
           <button
             onClick={handleNext}
             aria-label="Next car"
+            className="btn-chunky btn-chunky-light btn-chunky-circle"
             style={{
               position: 'absolute',
-              right: '8px',
+              right: '12px',
               zIndex: 2,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              cursor: 'pointer'
+              width: '38px',
+              height: '38px'
             }}
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={20} color="#0f172a" />
           </button>
         </div>
 
@@ -277,10 +283,11 @@ export const CarSelectModal: React.FC = () => {
                   height: '8px',
                   width: isSelected ? '28px' : '8px',
                   borderRadius: '4px',
-                  backgroundColor: isSelected ? car.visuals.primaryColor : 'rgba(255, 255, 255, 0.2)',
+                  backgroundColor: isSelected ? car.visuals.primaryColor : 'rgba(15, 23, 42, 0.18)',
                   border: 'none',
                   cursor: 'pointer',
-                  transition: 'all 0.25s ease'
+                  transition: 'all 0.25s ease',
+                  boxShadow: isSelected ? `0 2px 6px ${car.visuals.primaryColor}88` : 'none'
                 }}
                 title={car.name}
               />
@@ -288,86 +295,76 @@ export const CarSelectModal: React.FC = () => {
           })}
         </div>
 
-        {/* Stats Ratings (Rated 1 to 5) */}
+        {/* Stats Ratings (Clean Inset Tablet) */}
         <div
+          className="ui-card-inset"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
-            background: 'rgba(255, 255, 255, 0.03)',
-            borderRadius: '14px',
-            padding: '12px 14px',
-            border: '1px solid rgba(255, 255, 255, 0.06)'
+            background: 'rgba(255, 255, 255, 0.85)',
+            borderRadius: '18px',
+            padding: '14px 16px',
+            border: '1.5px solid #ffffff',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)'
           }}
         >
           {/* Speed */}
           <StatBar
             label="SPEED"
             rating={activeCar.ratings.speed}
-            icon={<Gauge size={14} color="#00f2fe" />}
-            color="#00f2fe"
+            icon={<Gauge size={15} color="#0284c7" />}
+            color="#0284c7"
           />
 
           {/* Acceleration */}
           <StatBar
             label="ACCELERATION"
             rating={activeCar.ratings.acceleration}
-            icon={<Zap size={14} color="#ffaa00" />}
-            color="#ffaa00"
+            icon={<Zap size={15} color="#f59e0b" />}
+            color="#f59e0b"
           />
 
           {/* Handling (governs braking) */}
           <StatBar
             label="HANDLING & BRAKES"
             rating={activeCar.ratings.handling}
-            icon={<Compass size={14} color="#39ff14" />}
-            color="#39ff14"
+            icon={<Compass size={15} color="#10b981" />}
+            color="#10b981"
           />
 
           <div
             style={{
-              fontSize: '10.5px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-muted)',
-              lineHeight: 1.3,
+              fontSize: '11px',
+              fontFamily: 'var(--theme-font-body)',
+              color: '#64748b',
+              lineHeight: 1.35,
               marginTop: '2px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-              paddingTop: '6px'
+              borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+              paddingTop: '8px'
             }}
           >
             * Handling directly governs cornering grip, steering authority, and active braking deceleration.
           </div>
         </div>
 
-        {/* Action Button: DRIVE */}
+        {/* Action Button: CHUNKY DRIVE BUTTON */}
         <button
           onClick={handleDrive}
+          className="btn-chunky btn-chunky-lg"
           style={{
-            marginTop: '4px',
-            padding: '14px 20px',
-            borderRadius: '14px',
-            border: 'none',
-            background: `linear-gradient(135deg, ${activeCar.visuals.primaryColor}, #0284c7)`,
-            color: '#ffffff',
-            fontFamily: 'var(--font-display)',
-            fontSize: '16px',
-            fontWeight: 800,
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            boxShadow: `0 0 20px ${activeCar.visuals.primaryColor}66`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+            marginTop: '8px',
+            background: activeCar.visuals.primaryColor,
+            color: contrast.textColor,
+            borderColor: contrast.borderColor,
+            boxShadow: `0 var(--theme-btn-bevel) 0 ${contrast.shadowColor}, 0 10px 24px ${activeCar.visuals.primaryColor}55`,
+            textShadow: contrast.textColor === '#ffffff' ? '0 1px 2px rgba(0, 0, 0, 0.5)' : 'none',
+            width: '100%'
           }}
-          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
-          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
           {isCurrentlyEquipped ? (
             <>
-              <Check size={18} /> CURRENT VEHICLE • DRIVE
+              <Check size={20} color={contrast.textColor} /> CURRENT VEHICLE • DRIVE
             </>
           ) : (
             <>SELECT & DRIVE 🏁</>
@@ -393,19 +390,21 @@ const StatBar: React.FC<StatBarProps> = ({ label, rating, icon, color }) => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '11px'
+          fontFamily: 'var(--theme-font-body)',
+          fontSize: '11.5px'
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontWeight: 600 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 700 }}>
           {icon}
           {label}
         </span>
-        <span style={{ color, fontWeight: 700 }}>{rating} / 5</span>
+        <span style={{ color, fontFamily: 'var(--theme-font-action)', fontSize: '13.5px', letterSpacing: '0.5px' }}>
+          {rating} / 5
+        </span>
       </div>
 
-      {/* 5 Segmented Bars */}
-      <div style={{ display: 'flex', gap: '5px', width: '100%', height: '8px' }}>
+      {/* 5 Segmented Chunky Bars */}
+      <div style={{ display: 'flex', gap: '6px', width: '100%', height: '9px' }}>
         {[1, 2, 3, 4, 5].map((seg) => {
           const isFilled = seg <= rating;
           return (
@@ -413,10 +412,10 @@ const StatBar: React.FC<StatBarProps> = ({ label, rating, icon, color }) => {
               key={seg}
               style={{
                 flex: 1,
-                borderRadius: '3px',
-                backgroundColor: isFilled ? color : 'rgba(255, 255, 255, 0.1)',
-                boxShadow: isFilled ? `0 0 8px ${color}88` : 'none',
-                transition: 'background-color 0.25s ease'
+                borderRadius: '4px',
+                backgroundColor: isFilled ? color : '#e2e8f0',
+                boxShadow: isFilled ? `0 2px 0 rgba(0, 0, 0, 0.15), 0 0 6px ${color}44` : 'none',
+                transition: 'background-color 0.2s ease'
               }}
             />
           );
