@@ -19,6 +19,7 @@ dump/
 *.apk
 *.aab
 *.zip
+itch-assets/
 
 # Secrets, Environment & Signing Keys
 .env

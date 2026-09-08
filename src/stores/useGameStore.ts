@@ -19,6 +19,7 @@ interface GameState {
   carSelectOpen: boolean;
   cameraZoom: number;
   isPaused: boolean;
+  isGameStarted: boolean;
   telemetry: TelemetryData;
 
   setControlMode: (mode: ControlMode) => void;
@@ -28,6 +29,7 @@ interface GameState {
   setCarSelectOpen: (open: boolean) => void;
   setCameraZoom: (zoom: number) => void;
   setIsPaused: (paused: boolean) => void;
+  startGame: () => void;
   updateTelemetry: (telemetry: Partial<TelemetryData>) => void;
 }
 
@@ -37,6 +39,7 @@ export const useGameStore = create<GameState>((set) => ({
   carSelectOpen: false,
   cameraZoom: 1.0,
   isPaused: false,
+  isGameStarted: false,
   telemetry: {
     speed: 0,
     speedKmh: 0,
@@ -55,6 +58,7 @@ export const useGameStore = create<GameState>((set) => ({
   setCarSelectOpen: (open) => set({ carSelectOpen: open }),
   setCameraZoom: (zoom) => set({ cameraZoom: zoom }),
   setIsPaused: (paused) => set({ isPaused: paused }),
+  startGame: () => set({ isGameStarted: true }),
   updateTelemetry: (data) =>
     set((state) => ({ telemetry: { ...state.telemetry, ...data } }))
 }));

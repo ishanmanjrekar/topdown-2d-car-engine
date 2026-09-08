@@ -4,6 +4,7 @@ import { CarCanvas } from './components/game/CarCanvas';
 import { TelemetryHUD } from './components/debug/TelemetryHUD';
 import { DebugMenu } from './components/debug/DebugMenu';
 import { CarSelectModal } from './demo/components/CarSelectModal';
+import { SplashScreen } from './components/common/SplashScreen';
 
 export const App: React.FC = () => {
   return (
@@ -28,6 +29,9 @@ export const App: React.FC = () => {
 
         {/* Demo Vehicle Showroom & Preset Selector (Decoupled Demo Layer) */}
         <CarSelectModal />
+
+        {/* Splash Screen with Progress Loader & Tap to Play */}
+        <SplashScreen />
       </div>
     </BoundingBox>
   );
