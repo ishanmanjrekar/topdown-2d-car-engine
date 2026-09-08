@@ -10,39 +10,44 @@
 
 ---
 
-## 📚 Technical Documentation
+## 📚 Technical Documentation & System Design
 
 Detailed mathematical formulations, architecture diagrams, and tuning dictionaries are documented in the [`docs/`](./docs) folder:
 
+- **[System Design Document (`docs/design-doc.md`)](./docs/design-doc.md)**: Overarching architecture roadmap, component contracts, lifecycle, and documentation directory.
 - **[System Architecture (`docs/ARCHITECTURE.md`)](./docs/ARCHITECTURE.md)**: Full game loop pipeline, dynamic follow camera with lookahead and car-up rotation, responsive viewport scaling (`BoundingBox`), multi-layer canvas rendering, and state management.
-- **[Rear-Touch Push Steering (`docs/CONTROLS_REAR_TOUCH.md`)](./docs/CONTROLS_REAR_TOUCH.md)**: Mathematical derivation of rear bumper anchor projection, push throttle dynamics, counter-rotational steer torque, touch unprojection through camera transforms, and interactive visual gizmo.
 - **[2D Vehicle Physics Model (`docs/VEHICLE_PHYSICS.md`)](./docs/VEHICLE_PHYSICS.md)**: Velocity decomposition into local coordinates, powertrain drive & active braking, lateral drift friction decay, speed-dependent steering authority, arena wall collisions, telemetry equations, and preset specifications.
+- **[Rear-Touch Push Steering (`docs/CONTROLS_REAR_TOUCH.md`)](./docs/CONTROLS_REAR_TOUCH.md)**: Mathematical derivation of rear bumper anchor projection, push throttle dynamics, counter-rotational steer torque, touch unprojection through camera transforms, and interactive visual gizmo.
+- **[Plug-and-Play Integration Guide (`docs/INTEGRATION_GUIDE.md`)](./docs/INTEGRATION_GUIDE.md)**: How to extract the core engine, strip the demo showroom layer, replace procedural cars with custom sprites, and run headlessly on multiplayer servers.
+- **[AI Coding Agent Invariants (`docs/AGENTS.md`)](./docs/AGENTS.md)**: Context card, coordinate system invariants, and copy-paste prompt templates for LLM pair-programmers (Antigravity, Cursor, Copilot, Claude Code).
 
 ---
 
 ## ✨ Features
 
 - 🎮 **Intuitive Rear-Touch Push Steering**: Pilot the car with a single finger placed behind the rear bumper — push forward to throttle, slide laterally to steer/swing the rear axle, and press forward ahead of the bumper to brake or reverse.
+- 🏎️ **Vehicle Showroom & 5 Presets**: Choose between 5 distinct vehicles rated across **Speed**, **Acceleration**, and **Handling** (1–5 scale). Braking dynamics are tied directly to Handling. Switch cars on the fly without losing track position!
 - 💨 **Arcade Drift Physics**: Dynamic tire friction model with realistic oversteer, slip angle measurement, continuous tire skid marks, and expanding tire smoke particles.
 - 🎥 **Dynamic Chase Camera**: Speed-proportional forward lookahead, smooth damping, and automatic rotation to keep the vehicle oriented upwards with $40\%$ bottom screen room for touch controls.
-- 📊 **Real-Time Telemetry HUD**: Live digital speedometer ($\text{km/h}$ and $\text{px/s}$), slip angle indicator, estimated lateral G-force meter, drift state indicator, and FPS counter.
-- 🎛️ **Live Tuning Drawer**: In-game slide-out drawer to tweak physics constants in real time or switch between built-in presets (`Arcade Default`, `Street Drift`, `Track Grip`, `Heavy Muscle`).
+- 📊 **Real-Time Telemetry HUD**: Live digital speedometer ($\text{km/h}$ and $\text{px/s}$), slip angle indicator, estimated lateral G-force meter, drift state indicator, FPS counter, and quick **Choose Car** access.
+- 🔌 **Decoupled Plug-and-Play Architecture**: The core engine (`src/engine/`) is 100% headless with zero UI dependencies. The demo presets and showroom UI (`src/demo/`) are isolated and can be detached in 3 minutes.
 - 📱 **Cross-Platform Deployment**:
   - **Web / Itch.io Sandbox**: Letterboxed responsive scaler clamped to physical screen bounds.
   - **Native Android APK**: 100% fluid borderless fullscreen layout powered by Capacitor 7.
 
 ---
 
-## 🏎️ Vehicle Tuning Presets
+## 🏎️ Vehicle Presets & Showroom (Rated 1 to 5)
 
-The engine comes equipped with 4 ready-to-race tuning setups:
+Access the in-game showroom by tapping **`🏎️ Choose Car`** directly below the speedometer:
 
-| Preset | Max Speed | Acceleration | Lateral Friction | Drift Threshold | Style / Feel |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Arcade Default** (Default) | 880 px/s | 1150 px/s² | 0.88 | 16° | High-torque arcade pursuit with forgiving slide recovery |
-| **Street Drift** | 920 px/s | 1300 px/s² | 0.78 | 12° | Loose rear end tuned for sustained high-angle drifts |
-| **Track Grip** | 1000 px/s | 1450 px/s² | 0.96 | 24° | High downforce, sticky tires, sharp cornering lines |
-| **Heavy Muscle** | 820 px/s | 950 px/s² | 0.84 | 14° | Weighty momentum, deep engine rumble, wide swing turns |
+| Preset | Archetype | Color & Aero | Speed | Accel | Handling & Brakes | Style / Feel |
+| :--- | :--- | :--- | :---: | :---: | :---: | :--- |
+| **Apex GT** (Default) | Balanced Cruiser | Cyan `#00f2fe`, Ducktail | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | Forgiving benchmark with predictable, stable braking. |
+| **Track Phantom** | Grip Specialist | Lime `#39ff14`, GT Wing | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | High downforce; racing calipers stop on a dime. |
+| **Tokyo Drifter** | Street Tuner | Orange `#ff7e40`, Dual Fins | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ | Low tire grip; loose braking into sustained high-angle drifts. |
+| **Iron V8 Muscle** | Heavy Muscle Dragster | Crimson `#ff2a55`, Stripe | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐ | Monstrous launch torque; weighty chassis with longer braking distance. |
+| **Hyperion XLR** | Prototype Hypercar | Violet `#a855f7`, GT Wing | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Blistering top end speed; carbon-ceramic brakes for precision control. |
 
 ---
 

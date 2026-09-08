@@ -1,10 +1,10 @@
 import React from 'react';
 import { useGameStore } from '../../stores/useGameStore';
 import { useCarConfigStore } from '../../stores/useCarConfigStore';
-import { Gauge, Settings2, RotateCcw, Flame } from 'lucide-react';
+import { Gauge, Settings2, RotateCcw, Flame, Car } from 'lucide-react';
 
 export const TelemetryHUD: React.FC = () => {
-  const { telemetry, toggleDebugMenu } = useGameStore();
+  const { telemetry, toggleDebugMenu, setCarSelectOpen } = useGameStore();
   const { carColor } = useCarConfigStore();
 
   const handleReset = () => {
@@ -39,18 +39,19 @@ export const TelemetryHUD: React.FC = () => {
           gap: '8px'
         }}
       >
-        {/* Speedometer & Primary Telemetry */}
-        <div
-          className="glass-panel"
-          style={{
-            padding: '10px 14px',
-            borderRadius: '14px',
-            pointerEvents: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}
-        >
+        {/* Left Column: Speedometer & Choose Car */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+          {/* Speedometer & Primary Telemetry */}
+          <div
+            className="glass-panel"
+            style={{
+              padding: '10px 14px',
+              borderRadius: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}
+          >
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span
               style={{
@@ -111,7 +112,39 @@ export const TelemetryHUD: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Controls (Reset, Tune) */}
+        {/* Choose Car Button directly below Speedometer */}
+        <button
+          onClick={() => setCarSelectOpen(true)}
+          className="glass-panel"
+          title="Choose Vehicle (C)"
+          style={{
+            padding: '7px 12px',
+            borderRadius: '11px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            color: '#ffffff',
+            border: `1px solid ${carColor}66`,
+            background: 'rgba(15, 23, 42, 0.75)',
+            boxShadow: `0 0 14px ${carColor}26`,
+            fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
+            letterSpacing: '0.6px',
+            textTransform: 'uppercase',
+            width: 'fit-content',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          <Car size={14} color={carColor} />
+          <span>Choose Car</span>
+        </button>
+      </div>
+
+      {/* Action Controls (Reset, Tune) */}
         <div style={{ display: 'flex', gap: '6px', pointerEvents: 'auto', flexShrink: 0 }}>
           <button
             onClick={handleReset}

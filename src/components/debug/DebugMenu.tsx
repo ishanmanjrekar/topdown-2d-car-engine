@@ -5,7 +5,10 @@ import { useCarConfigStore, PresetName } from '../../stores/useCarConfigStore';
 import { useGameStore } from '../../stores/useGameStore';
 
 export const DebugMenu: React.FC = () => {
-  const { debugMenuOpen, setDebugMenuOpen, controlMode, setControlMode } = useGameStore();
+  const debugMenuOpen = useGameStore((s) => s.debugMenuOpen);
+  const setDebugMenuOpen = useGameStore((s) => s.setDebugMenuOpen);
+  const controlMode = useGameStore((s) => s.controlMode);
+  const setControlMode = useGameStore((s) => s.setControlMode);
   const config = useCarConfigStore();
 
   if (!debugMenuOpen) return null;

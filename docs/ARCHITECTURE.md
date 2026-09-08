@@ -8,10 +8,13 @@
 ## Directory Structure
 ```
 topdown-2d-car-engine/
-├── docs/                                # Engine specifications & physics documentation
+├── docs/                                # Engine specifications & documentation suite
+│   ├── design-doc.md                    # Overarching system design & architecture roadmap
 │   ├── ARCHITECTURE.md                  # System architecture, pipeline, and platform design (this file)
+│   ├── VEHICLE_PHYSICS.md               # 2D vehicle dynamics, drift mechanics, and presets
 │   ├── CONTROLS_REAR_TOUCH.md           # Rear-touch push-behind steering math & touch unprojection
-│   └── VEHICLE_PHYSICS.md               # 2D vehicle dynamics, drift mechanics, and presets
+│   ├── INTEGRATION_GUIDE.md             # Plug-and-play decoupling & custom sprite integration guide
+│   └── AGENTS.md                        # AI coding assistant invariants & prompt cheatsheet
 ├── scripts/                             # Automated portable build & environment scripts
 │   ├── setup-mobile-env.ps1             # Portable JDK 21 + Android command-line tools bootstrap
 │   ├── build-apk.ps1                    # Android APK compilation pipeline (Gradle via wrapper)
@@ -42,6 +45,11 @@ topdown-2d-car-engine/
 │   ├── stores/
 │   │   ├── useCarConfigStore.ts         # Zustand store for physics tuning constants & presets
 │   │   └── useGameStore.ts              # Zustand store for control mode, telemetry state, and UI toggles
+│   ├── demo/                            # Detachable demo presentation layer (showroom, presets)
+│   │   ├── carPresets.ts                # 5 Car presets (Apex GT, Track Phantom, Tokyo Drifter, etc.)
+│   │   └── components/
+│   │       ├── CarPreview.tsx           # Standalone top-down vector vehicle preview canvas
+│   │       └── CarSelectModal.tsx       # Vehicle showroom dialog with 3-stat ratings and DRIVE action
 │   └── styles/
 │       └── global.css                   # Theme tokens, glassmorphism CSS, and touch-action resets
 ├── capacitor.config.ts                  # Capacitor native runtime configuration
@@ -61,7 +69,7 @@ topdown-2d-car-engine/
   - Initial heading $\theta_0 = -\pi/2\text{ rad}$ points along the $-Y$ axis (**North / Up**).
 - **Physical Scale**:
   - Distance: Virtual canvas pixels (car length is $64\text{ px}$, width is $32\text{ px}$; $1\text{ meter} \approx 20\text{ px}$).
-  - Speed: Pixels per second ($\text{px/s}$). Real-time speedometer converts to $\text{km/h}$ via $\text{Speed}_{\text{km/h}} = \text{Speed}_{\text{px/s}} \times 0.36$.
+  - Speed: Pixels per second ($\text{px/s}$). Real-time speedometer converts to $\text{km/h}$ via $\text{Speed}_{\text{km/h}} = \text{Speed}_{\text{px/s}} \times 0.25$ (calibrated so 200 px/s corresponds to 50 km/h).
   - Acceleration / Braking: Pixels per second squared ($\text{px/s}^2$).
   - Angular Velocity: Radians per second ($\text{rad/s}$).
 

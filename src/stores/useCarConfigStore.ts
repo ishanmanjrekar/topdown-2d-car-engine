@@ -25,6 +25,11 @@ export interface CarPhysicsConfig {
   showTireTracks: boolean;    // Draw skid marks on track
   showTouchGizmo: boolean;    // Draw rear touch circle and tether line
   carColor: string;           // Vehicle chassis accent color
+  accentColor?: string;       // Secondary stripe / roof accent
+  spoilerType?: 'none' | 'ducktail' | 'gt-wing' | 'dual-fin'; // Aero wing style
+  stripe?: boolean;           // Center racing stripe
+  underglowColor?: string;    // Neon chassis underglow
+  presetId?: string;          // Current active preset ID
 }
 
 export type PresetName = 'arcade-default' | 'street-drift' | 'track-grip' | 'heavy-muscle';
@@ -53,7 +58,12 @@ const PRESETS: Record<PresetName, CarPhysicsConfig> = {
     showDebugVectors: true,
     showTireTracks: true,
     showTouchGizmo: true,
-    carColor: '#00f2fe'
+    carColor: '#00f2fe',
+    accentColor: '#ffffff',
+    spoilerType: 'ducktail',
+    stripe: false,
+    underglowColor: 'rgba(0, 242, 254, 0.5)',
+    presetId: 'apex-gt'
   },
   'street-drift': {
     maxSpeed: 520,

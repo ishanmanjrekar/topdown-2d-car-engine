@@ -136,6 +136,9 @@ export class Track {
     const bounce = 0.45; // Restitution bounce factor
     const friction = 0.85;
 
+    const fwdX = Math.cos(car.angle);
+    const fwdY = Math.sin(car.angle);
+
     // Left Wall
     if (car.x < this.bounds.minX + margin) {
       car.x = this.bounds.minX + margin;
@@ -143,6 +146,9 @@ export class Track {
         car.vx = -car.vx * bounce;
         car.vy *= friction;
         car.angularVelocity *= 0.4;
+      }
+      if (fwdX < 0 && car.longitudinalVelocity > 0) {
+        car.longitudinalVelocity = Math.max(0, car.longitudinalVelocity * 0.15);
       }
     }
     // Right Wall
@@ -153,6 +159,9 @@ export class Track {
         car.vy *= friction;
         car.angularVelocity *= 0.4;
       }
+      if (fwdX > 0 && car.longitudinalVelocity > 0) {
+        car.longitudinalVelocity = Math.max(0, car.longitudinalVelocity * 0.15);
+      }
     }
     // Top Wall
     if (car.y < this.bounds.minY + margin) {
@@ -162,6 +171,9 @@ export class Track {
         car.vx *= friction;
         car.angularVelocity *= 0.4;
       }
+      if (fwdY < 0 && car.longitudinalVelocity > 0) {
+        car.longitudinalVelocity = Math.max(0, car.longitudinalVelocity * 0.15);
+      }
     }
     // Bottom Wall
     if (car.y > this.bounds.maxY - margin) {
@@ -170,6 +182,9 @@ export class Track {
         car.vy = -car.vy * bounce;
         car.vx *= friction;
         car.angularVelocity *= 0.4;
+      }
+      if (fwdY > 0 && car.longitudinalVelocity > 0) {
+        car.longitudinalVelocity = Math.max(0, car.longitudinalVelocity * 0.15);
       }
     }
   }

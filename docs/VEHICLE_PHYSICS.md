@@ -72,6 +72,13 @@ $$v_{\text{lat}}(t + \Delta t) = v_{\text{lat}}(t) \cdot \left(\text{config.drif
 - **Extended Drift / Powerslide** ($\text{driftFactor} \approx 0.965$):
   Lateral momentum is retained across frames ($3.5\%$ decay per $1/60\text{s}$), allowing sustained drifts, donuts, and pendulum turns.
 
+#### Induced Cornering Drag & Tire Scrub:
+Real-world tires generate kinetic friction opposing forward momentum when sliding or turned hard:
+$$F_{\text{scrub}} = \text{steerScrub} + \text{driftScrub}$$
+- **Steer Scrub**: Front-wheel angle drag $\approx 0.18 \cdot |\text{steer}|$.
+- **Drift Scrub**: Sideways tire sliding friction $\approx 0.70 \cdot \min\left(1.0, \frac{|v_{\text{lat}}|}{0.35 \cdot \text{maxSpeed}}\right)$.
+- When in a tight donut or full sideways drift, tire scrub decelerates forward speed until balancing engine throttle, naturally settling the car into a realistic drift crawl ($\approx 25\text{--}40\text{ px/s} = \mathbf{6\text{--}10\text{ km/h}}$). Straightening the steering drops scrub to zero, restoring full straightaway acceleration.
+
 ---
 
 ### 3. Steering Authority & Turning Rate
@@ -165,16 +172,16 @@ When the vehicle collides with a boundary wall (accounting for a $32\text{ px}$ 
 
 ## Telemetry HUD Formulas
 
-Published at $5\text{ Hz}$ ($200\text{ ms}$ interval) from `CarCanvas.tsx` to `useGameStore`:
+Published at $\sim 18\text{ Hz}$ ($55\text{ ms}$ interval) from `CarCanvas.tsx` to `useGameStore`:
 
 | Metric | Formula / Source | Display Unit |
 |--------|------------------|--------------|
-| **Speed** | $\|\vec{v}\| = \sqrt{v_x^2 + v_y^2}$ | $\text{px/s}$ |
-| **Speed (km/h)** | $\text{round}(\text{speed} \times 0.36)$ | $\text{km/h}$ |
+| **Speed** | $v_{\text{disp}} = \frac{\sqrt{\Delta x^2 + \Delta y^2}}{\Delta t}$ (True Ground Displacement) | $\text{px/s}$ |
+| **Speed (km/h)** | $\text{round}(v_{\text{disp}} \times 0.25)$ | $\text{km/h}$ |
 | **Slip Angle** | $\text{round}\left(\text{slipAngle} \times \frac{180}{\pi}\right)$ | Degrees ($^\circ$) |
 | **Lateral G-Force** | $\frac{|v_{\text{lat}} \cdot \omega|}{980}$ (rounded to 2 decimals) | G |
-| **Drift State** | $\text{slipAngle} > 16^\circ \land \text{speed} > 80\text{ px/s}$ | Boolean badge |
-| **FPS** | $(\text{frames} \times 1000) / \Delta t_{\text{ms}}$ | Frames/sec |
+| **Drift State** | $\text{slipAngle} > 16^\circ \land v_{\text{disp}} > \min(45, \text{maxSpeed} \times 0.18)$ | Boolean badge |
+| **FPS** | $(\text{frames} \times 1000) / \Delta t_{\text{ms}}$ (updated at $2.5\text{ Hz}$) | Frames/sec |
 
 ---
 
@@ -195,20 +202,35 @@ All variables are live-tunable via `useCarConfigStore` in the slide-out tuning d
 | `driftFactor` | `number` | ratio | 0.82 – 0.98 | Lateral grip retention per frame |
 | `angularDrag` | `number` | ratio | 0.75 – 0.95 | Rotational inertia decay per frame |
 
-### Built-in Vehicle Presets:
+### Built-in Vehicle Presets (5 Archetypes):
 
-| Parameter | Arcade Default | Street Drift | Track Grip | Heavy Muscle |
-|-----------|----------------|--------------|------------|--------------|
-| **`maxSpeed`** | $460\text{ px/s}$ | $520\text{ px/s}$ | $500\text{ px/s}$ | $440\text{ px/s}$ |
-| **`acceleration`** | $480\text{ px/s}^2$ | $520\text{ px/s}^2$ | $550\text{ px/s}^2$ | $600\text{ px/s}^2$ |
-| **`reverseSpeed`** | $180\text{ px/s}$ | $200\text{ px/s}$ | $160\text{ px/s}$ | $150\text{ px/s}$ |
-| **`braking`** | $600\text{ px/s}^2$ | $500\text{ px/s}^2$ | $750\text{ px/s}^2$ | $450\text{ px/s}^2$ |
-| **`naturalDrag`** | $0.982$ | $0.988$ | $0.978$ | $0.985$ |
-| **`steerRate`** | $3.8\text{ rad/s}$ | $4.2\text{ rad/s}$ | $4.5\text{ rad/s}$ | $3.2\text{ rad/s}$ |
-| **`driftFactor`** | $0.930$ | $0.965$ | $0.860$ | $0.950$ |
-| **`angularDrag`** | $0.880$ | $0.910$ | $0.820$ | $0.890$ |
-| **`rearAnchorDistance`** | $55\text{ px}$ | $60\text{ px}$ | $50\text{ px}$ | $65\text{ px}$ |
-| **`rearPushRadius`** | $110\text{ px}$ | $120\text{ px}$ | $100\text{ px}$ | $130\text{ px}$ |
-| **`rearSteerMaxOffset`** | $85\text{ px}$ | $90\text{ px}$ | $75\text{ px}$ | $95\text{ px}$ |
-| **`rearDeadzone`** | $10\text{ px}$ | $8\text{ px}$ | $10\text{ px}$ | $12\text{ px}$ |
-| **`carColor`** | `#00f2fe` (Cyan) | `#ff7e40` (Orange) | `#39ff14` (Neon Green) | `#ff3366` (Crimson) |
+| Parameter | Apex GT (Starter) | Track Phantom (Grip) | Tokyo Drifter (Drift) | Iron V8 (Muscle) | Hyperion XLR (Hypercar) |
+|-----------|-------------------|----------------------|-----------------------|------------------|-------------------------|
+| **`maxSpeed`** | $460\text{ px/s}$ | $500\text{ px/s}$ | $510\text{ px/s}$ | $450\text{ px/s}$ | $580\text{ px/s}$ |
+| **`acceleration`** | $480\text{ px/s}^2$ | $540\text{ px/s}^2$ | $520\text{ px/s}^2$ | $640\text{ px/s}^2$ | $560\text{ px/s}^2$ |
+| **`reverseSpeed`** | $180\text{ px/s}$ | $180\text{ px/s}$ | $200\text{ px/s}$ | $160\text{ px/s}$ | $210\text{ px/s}$ |
+| **`braking`** | $600\text{ px/s}^2$ | $820\text{ px/s}^2$ | $480\text{ px/s}^2$ | $420\text{ px/s}^2$ | $720\text{ px/s}^2$ |
+| **`naturalDrag`** | $0.982$ | $0.978$ | $0.988$ | $0.984$ | $0.984$ |
+| **`steerRate`** | $3.8\text{ rad/s}$ | $4.4\text{ rad/s}$ | $4.2\text{ rad/s}$ | $3.1\text{ rad/s}$ | $4.1\text{ rad/s}$ |
+| **`driftFactor`** | $0.930$ | $0.860$ | $0.965$ | $0.952$ | $0.890$ |
+| **`angularDrag`** | $0.880$ | $0.820$ | $0.910$ | $0.890$ | $0.850$ |
+| **`carColor`** | `#00f2fe` (Cyan) | `#39ff14` (Lime) | `#ff7e40` (Orange) | `#ff2a55` (Crimson) | `#a855f7` (Violet) |
+| **`spoilerType`** | Ducktail | GT Wing | Dual Fin | None | GT Wing |
+
+---
+
+## 3-Stat Arcade Ratings Model & Braking Dynamics
+
+In the vehicle showroom ([`src/demo/components/CarSelectModal.tsx`](../src/demo/components/CarSelectModal.tsx)), cars are evaluated across three 5-star metrics: **Speed**, **Acceleration**, and **Handling**:
+
+| Vehicle | Speed | Acceleration | Handling & Brakes | Archetype Description |
+|---|:---:|:---:|:---:|---|
+| **Apex GT** | ⭐⭐⭐ (3/5) | ⭐⭐⭐ (3/5) | ⭐⭐⭐ (3/5) | Balanced benchmark; smooth predictable braking. |
+| **Track Phantom** | ⭐⭐⭐⭐ (4/5) | ⭐⭐⭐⭐ (4/5) | ⭐⭐⭐⭐⭐ (5/5) | Maximum downforce; racing calipers stop on a dime. |
+| **Tokyo Drifter** | ⭐⭐⭐⭐ (4/5) | ⭐⭐⭐⭐ (4/5) | ⭐⭐ (2/5) | Low grip rear tires; loose braking into sustained slides. |
+| **Iron V8 Muscle** | ⭐⭐⭐ (3/5) | ⭐⭐⭐⭐⭐ (5/5) | ⭐ (1/5) | Massive launch torque; heavy chassis with long braking distance. |
+| **Hyperion XLR** | ⭐⭐⭐⭐⭐ (5/5) | ⭐⭐⭐⭐ (4/5) | ⭐⭐⭐⭐ (4/5) | Blistering velocity; carbon-ceramic brakes for high-speed control. |
+
+### Why Braking is Coupled with Handling:
+1. **Mechanical Reality**: Stopping distance is governed by tire friction limits ($\mu \cdot F_N$), not pad clamp force. A high-handling setup with high grip (`driftFactor = 0.86`) sustains high deceleration without locking up or losing lateral stability.
+2. **Arcade Convention**: In 3-stat racing games (e.g., *Mario Kart*, *Asphalt*, *Need for Speed*), braking responsiveness and cornering grip are unified into **Handling**. Low-handling cars naturally suffer trail-braking oversteer, allowing players to initiate drifts by tapping reverse before corner turn-in.

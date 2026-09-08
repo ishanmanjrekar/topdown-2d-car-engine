@@ -3,6 +3,7 @@ import { BoundingBox } from './components/common/BoundingBox';
 import { CarCanvas } from './components/game/CarCanvas';
 import { TelemetryHUD } from './components/debug/TelemetryHUD';
 import { DebugMenu } from './components/debug/DebugMenu';
+import { CarSelectModal } from './demo/components/CarSelectModal';
 
 export const App: React.FC = () => {
   return (
@@ -24,6 +25,9 @@ export const App: React.FC = () => {
 
         {/* Live Setup & Physics Debug Drawer */}
         <DebugMenu />
+
+        {/* Demo Vehicle Showroom & Preset Selector (Decoupled Demo Layer) */}
+        <CarSelectModal />
       </div>
     </BoundingBox>
   );

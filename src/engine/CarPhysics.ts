@@ -32,20 +32,30 @@ export class CarPhysics {
   isDrifting: boolean = false;
   frontWheelSteerAngle: number = 0;
 
+  // Ground displacement tracking
+  lastX: number = 0;
+  lastY: number = 0;
+  displacementSpeed: number = 0;
+
   constructor(startX: number = 0, startY: number = 0, startAngle: number = -Math.PI / 2) {
     this.x = startX;
     this.y = startY;
+    this.lastX = startX;
+    this.lastY = startY;
     this.angle = startAngle;
   }
 
   public reset(x: number = 0, y: number = 0, angle: number = -Math.PI / 2) {
     this.x = x;
     this.y = y;
+    this.lastX = x;
+    this.lastY = y;
     this.angle = angle;
     this.vx = 0;
     this.vy = 0;
     this.angularVelocity = 0;
     this.speed = 0;
+    this.displacementSpeed = 0;
     this.lateralVelocity = 0;
     this.longitudinalVelocity = 0;
     this.slipAngle = 0;
@@ -98,10 +108,26 @@ export class CarPhysics {
     // Apply natural rolling resistance / drag
     this.longitudinalVelocity *= Math.pow(config.naturalDrag, dt * 60);
 
-    // 4. Lateral friction and drift mechanics
+    // 4. Lateral friction, induced cornering drag, and drift scrub
     // Lateral velocity decay determines tire grip
     const driftDecay = Math.pow(config.driftFactor, dt * 60);
     this.lateralVelocity *= driftDecay;
+
+    // Tire scrub: sliding sideways (drift) or hard steering bleeds off longitudinal speed.
+    // In real driving, sliding tires generate heavy friction opposing forward motion.
+    const slipSpeed = Math.abs(this.lateralVelocity);
+    const steerScrub = Math.abs(steer) * 0.18; // Resistance from steered front wheels
+    const driftScrub = Math.min(0.80, (slipSpeed / Math.max(80, config.maxSpeed * 0.35)) * 0.70);
+    const totalScrub = Math.min(0.85, steerScrub + driftScrub);
+
+    if (totalScrub > 0.04) {
+      const scrubDecel = totalScrub * config.acceleration * 0.95;
+      if (this.longitudinalVelocity > 0) {
+        this.longitudinalVelocity = Math.max(0, this.longitudinalVelocity - scrubDecel * dt);
+      } else if (this.longitudinalVelocity < 0) {
+        this.longitudinalVelocity = Math.min(0, this.longitudinalVelocity + scrubDecel * dt);
+      }
+    }
 
     // 5. Steering logic
     this.frontWheelSteerAngle = steer * 0.55; // max ~31 degrees front wheel angle
@@ -127,14 +153,16 @@ export class CarPhysics {
 
     // Normalize angle to [-PI, PI]
     this.angle = Math.atan2(Math.sin(this.angle), Math.cos(this.angle));
+    this.speed = Math.hypot(this.vx, this.vy);
 
     // 8. Calculate slip angle for tire skid marks and telemetry
-    if (this.speed > 25) {
+    const minDriftSpeed = Math.min(45, config.maxSpeed * 0.18);
+    if (this.speed > 15) {
       const headingVelocityAngle = Math.atan2(this.vy, this.vx);
       let angleDiff = Math.abs(this.angle - headingVelocityAngle);
       while (angleDiff > Math.PI) angleDiff = Math.abs(angleDiff - 2 * Math.PI);
       this.slipAngle = angleDiff;
-      this.isDrifting = angleDiff > 0.28 && this.speed > 80;
+      this.isDrifting = angleDiff > 0.28 && this.speed > minDriftSpeed;
     } else {
       this.slipAngle = 0;
       this.isDrifting = false;

@@ -29,10 +29,14 @@ export const CarCanvas: React.FC = () => {
   // FPS tracking
   const frameCountRef = useRef<number>(0);
   const lastFpsUpdateRef = useRef<number>(performance.now());
+  const fpsRef = useRef<number>(60);
+  const lastTelemetryUpdateRef = useRef<number>(performance.now());
 
   // Store references
   const config = useCarConfigStore();
-  const { controlMode, updateTelemetry, isPaused } = useGameStore();
+  const controlMode = useGameStore((s) => s.controlMode);
+  const updateTelemetry = useGameStore((s) => s.updateTelemetry);
+  const isPaused = useGameStore((s) => s.isPaused);
 
   // Reset Car trigger
   const handleResetCar = useCallback(() => {
@@ -93,6 +97,7 @@ export const CarCanvas: React.FC = () => {
       if (['ArrowLeft', 'KeyA'].includes(e.code)) keysRef.current.left = true;
       if (['ArrowRight', 'KeyD'].includes(e.code)) keysRef.current.right = true;
       if (e.code === 'KeyR') handleResetCar();
+      if (e.code === 'KeyC') useGameStore.getState().toggleCarSelect();
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
@@ -208,40 +213,61 @@ export const CarCanvas: React.FC = () => {
     track.checkConeCollision(car.x, car.y, 26);
     track.checkWallCollision(car);
 
-    // 3. Skid Marks & Smoke Particles
+    // 3. Ground Displacement Speed Calculation (measured after wall & obstacle collisions)
+    const actualDx = car.x - car.lastX;
+    const actualDy = car.y - car.lastY;
+    const instantDispSpeed = dt > 0 ? Math.hypot(actualDx, actualDy) / dt : 0;
+    car.lastX = car.x;
+    car.lastY = car.y;
+
+    // Smooth displacement speed for responsive, realistic HUD readout
+    car.displacementSpeed += (instantDispSpeed - car.displacementSpeed) * Math.min(1.0, 18 * dt);
+    if (instantDispSpeed < 1.0 && Math.abs(throttle) < 0.05) {
+      car.displacementSpeed = 0;
+    }
+
+    // Dynamic minimum speed for skids / smoke based on maxSpeed
+    const minSkidSpeed = Math.min(45, config.maxSpeed * 0.18);
+
+    // 4. Skid Marks & Smoke Particles
     const wheels = car.getWheelPositions();
     for (let i = 0; i < wheels.length; i++) {
       const w = wheels[i];
       // Rear wheels leave more skids during drift or hard braking
-      const shouldSkid = config.showTireTracks && (car.isDrifting || (throttle < 0 && car.speed > 80));
+      const shouldSkid = config.showTireTracks && (car.isDrifting || (throttle < 0 && car.speed > minSkidSpeed));
       particles.recordTireMark(i, w.x, w.y, shouldSkid, car.speed);
 
-      if (car.isDrifting && car.speed > 90) {
+      if (car.isDrifting && car.speed > minSkidSpeed * 1.1) {
         particles.addSmoke(w.x, w.y, car.vx, car.vy, 1);
       }
     }
     particles.update(dt);
 
-    // 4. Camera Step
+    // 5. Camera Step
     camera.update(car.x, car.y, car.angle, car.vx, car.vy, dt);
 
-    // 5. Telemetry updates
+    // 6. Telemetry & FPS updates
     frameCountRef.current++;
     const now = performance.now();
-    if (now - lastFpsUpdateRef.current >= 200) {
-      const fps = Math.round((frameCountRef.current * 1000) / (now - lastFpsUpdateRef.current));
+    if (now - lastFpsUpdateRef.current >= 400) {
+      fpsRef.current = Math.round((frameCountRef.current * 1000) / (now - lastFpsUpdateRef.current));
       frameCountRef.current = 0;
       lastFpsUpdateRef.current = now;
+    }
+
+    // Refresh telemetry at ~18Hz (~55ms) displaying real ground displacement speed
+    if (now - lastTelemetryUpdateRef.current >= 55) {
+      lastTelemetryUpdateRef.current = now;
 
       updateTelemetry({
-        speed: Math.round(car.speed),
-        speedKmh: Math.round(car.speed * 0.36),
+        speed: Math.round(car.displacementSpeed),
+        speedKmh: Math.round(car.displacementSpeed * 0.25),
         slipAngle: Math.round((car.slipAngle * 180) / Math.PI),
         lateralG: Number((Math.abs(car.lateralVelocity * car.angularVelocity) / 980).toFixed(2)),
         throttle: Number(throttle.toFixed(2)),
         steering: Number(steer.toFixed(2)),
         isDrifting: car.isDrifting,
-        fps
+        fps: fpsRef.current
       });
     }
 
@@ -384,7 +410,19 @@ function drawCar(
   const halfL = length / 2;
   const halfW = width / 2;
 
-  // 1. Soft Dynamic Drop Shadow
+  // 1. Soft Dynamic Drop Shadow & Optional Underglow
+  if (config.underglowColor) {
+    ctx.save();
+    const glowGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 48);
+    glowGrad.addColorStop(0, config.underglowColor);
+    glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 46, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.beginPath();
   ctx.roundRect(-halfL + 4, -halfW + 5, length, width, 8);
@@ -423,6 +461,12 @@ function drawCar(
   ctx.roundRect(-halfL, -halfW, length, width, 10);
   ctx.fill();
 
+  // Optional racing stripe
+  if (config.stripe && config.accentColor) {
+    ctx.fillStyle = config.accentColor;
+    ctx.fillRect(-halfL, -3.5, length, 7);
+  }
+
   // Dark roof/cockpit
   ctx.fillStyle = '#0f172a';
   ctx.beginPath();
@@ -459,6 +503,26 @@ function drawCar(
     ctx.fillRect(-halfL - 2, -halfW + 3, 2, 6);
     ctx.fillRect(-halfL - 2, halfW - 9, 2, 6);
     ctx.shadowBlur = 0;
+  }
+
+  // Spoilers & Rear Aero Wings
+  if (config.spoilerType === 'gt-wing') {
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(-halfL - 4, -halfW - 2, 5, width + 4);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-halfL - 2, -halfW + 5, 3, 2.5);
+    ctx.fillRect(-halfL - 2, halfW - 7.5, 3, 2.5);
+    ctx.fillStyle = config.carColor;
+    ctx.fillRect(-halfL - 4, -halfW - 2, 1.5, width + 4);
+  } else if (config.spoilerType === 'dual-fin') {
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-halfL - 3, -halfW + 2, 4, 6);
+    ctx.fillRect(-halfL - 3, halfW - 8, 4, 6);
+  } else if (config.spoilerType === 'ducktail') {
+    ctx.fillStyle = config.carColor;
+    ctx.fillRect(-halfL - 2, -halfW + 4, 2.5, width - 8);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(-halfL - 2, -halfW + 4, 1, width - 8);
   }
 
   // Front Headlight Beam (Atmospheric light cone)

@@ -4,7 +4,7 @@ export type ControlMode = 'rear-touch' | 'touch-joystick' | 'keyboard';
 
 export interface TelemetryData {
   speed: number;        // Speed in px/s
-  speedKmh: number;     // Simulated km/h (speed * 0.36)
+  speedKmh: number;     // Simulated km/h (speed * 0.25)
   slipAngle: number;    // Difference between heading and velocity in degrees
   lateralG: number;     // Lateral G force estimate
   throttle: number;     // Current throttle input [0..1]
@@ -16,6 +16,7 @@ export interface TelemetryData {
 interface GameState {
   controlMode: ControlMode;
   debugMenuOpen: boolean;
+  carSelectOpen: boolean;
   cameraZoom: number;
   isPaused: boolean;
   telemetry: TelemetryData;
@@ -23,6 +24,8 @@ interface GameState {
   setControlMode: (mode: ControlMode) => void;
   toggleDebugMenu: () => void;
   setDebugMenuOpen: (open: boolean) => void;
+  toggleCarSelect: () => void;
+  setCarSelectOpen: (open: boolean) => void;
   setCameraZoom: (zoom: number) => void;
   setIsPaused: (paused: boolean) => void;
   updateTelemetry: (telemetry: Partial<TelemetryData>) => void;
@@ -31,6 +34,7 @@ interface GameState {
 export const useGameStore = create<GameState>((set) => ({
   controlMode: 'rear-touch',
   debugMenuOpen: false,
+  carSelectOpen: false,
   cameraZoom: 1.0,
   isPaused: false,
   telemetry: {
@@ -47,6 +51,8 @@ export const useGameStore = create<GameState>((set) => ({
   setControlMode: (mode) => set({ controlMode: mode }),
   toggleDebugMenu: () => set((s) => ({ debugMenuOpen: !s.debugMenuOpen })),
   setDebugMenuOpen: (open) => set({ debugMenuOpen: open }),
+  toggleCarSelect: () => set((s) => ({ carSelectOpen: !s.carSelectOpen })),
+  setCarSelectOpen: (open) => set({ carSelectOpen: open }),
   setCameraZoom: (zoom) => set({ cameraZoom: zoom }),
   setIsPaused: (paused) => set({ isPaused: paused }),
   updateTelemetry: (data) =>
