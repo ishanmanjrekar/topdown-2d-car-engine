@@ -54,6 +54,8 @@ export const SplashScreen: React.FC = () => {
     return null;
   }
 
+  const splashUrl = `${import.meta.env.BASE_URL}splash.png`;
+
   return (
     <div
       onClick={handleStart}
@@ -65,7 +67,7 @@ export const SplashScreen: React.FC = () => {
         width: '100%',
         height: '100%',
         zIndex: 100,
-        backgroundImage: 'url(/splash.png)',
+        backgroundImage: `url("${splashUrl}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
