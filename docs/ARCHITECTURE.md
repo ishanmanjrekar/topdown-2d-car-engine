@@ -82,8 +82,8 @@ topdown-2d-car-engine/
 ### 2. Screen & Viewport Scaling
 - **Logical Resolution**: $480 \times 880\text{ px}$ (9:16.5 portrait smartphone aspect ratio).
 - **Aspect Handling (`BoundingBox.tsx`)**:
-  - **Web / Itch.io Sandbox**: Calculates `scale = Math.min(availW / 480, availH / 880)` and applies CSS transform `scale(...)` centered on the viewport. Clamps available dimensions against `window.screen.width` and `window.screen.height` to prevent iframe overflow glitches on mobile browsers.
-  - **Capacitor Native Android APK**: Detects native runtime (`'Capacitor' in window`), disabling letterboxing and rendering a $100\%$ fluid borderless full-screen view.
+  - **Desktop Web / Itch.io Sandbox**: Calculates `scale = Math.min(availW / 480, availH / 880)` and applies CSS transform `scale(...)` centered on the viewport with simulated phone frame styling (`box-shadow`, `border-radius`). Clamps available dimensions against physical screen bounds.
+  - **Capacitor & Mobile Web / Mobile Itch.io**: Automatically detects mobile browsers and native Capacitor shells, activating a 100% fluid, unscaled, borderless layout (`scale: 1`) to eliminate letterbox borders across all mobile screen ratios.
 - **DPR Scaling**: The canvas internal backing buffer matches `(width * DPR, height * DPR)` where `DPR = Math.min(window.devicePixelRatio, 2)` to eliminate blurriness on Retina / OLED displays while maintaining 60 FPS.
 - **Input Coordinate Mapping**: Pointer events (`clientX`, `clientY`) are normalized using `scaleX = logicalW / rect.width` and `scaleY = logicalH / rect.height` before passing through the camera's inverse transform.
 

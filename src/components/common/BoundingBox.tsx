@@ -9,28 +9,40 @@ interface GameLayerProps {
 export const BoundingBox: React.FC<GameLayerProps> = ({ width, height, children }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [isCapacitor, setIsCapacitor] = useState(false);
+  const [isFluidLayout, setIsFluidLayout] = useState(false);
 
   useLayoutEffect(() => {
-    // Detect if running inside the Capacitor native WebView shell
+    // Detect if running inside the Capacitor native WebView shell or a mobile/tablet browser
     const checkCapacitor = typeof window !== 'undefined' && ('Capacitor' in window || (window as any).Capacitor !== undefined);
-    setIsCapacitor(checkCapacitor);
+    const checkIsMobile = () =>
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints > 0 && window.innerWidth <= 800);
 
     const handleResize = () => {
+      const isFluid = checkCapacitor || checkIsMobile();
+      setIsFluidLayout(isFluid);
+
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current.parentElement || document.body;
 
         // On mobile itch.io, the iframe may be wider/taller than the physical screen.
-        // screen.width/height give the actual device dimensions in CSS pixels,
-        // so we clamp the available space to what the device can actually show.
-        const availW = Math.min(clientWidth || window.innerWidth, window.screen.width);
-        const availH = Math.min(clientHeight || window.innerHeight, window.screen.height);
+        // screen.width/height give the actual device dimensions in CSS pixels.
+        // We clamp available space to physical screen bounds, accounting for physical
+        // orientation to prevent rotation clipping on devices with stale screen dimensions.
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const screenW = window.screen.width;
+        const screenH = window.screen.height;
+        const realScreenW = isLandscape ? Math.max(screenW, screenH) : Math.min(screenW, screenH);
+        const realScreenH = isLandscape ? Math.min(screenW, screenH) : Math.max(screenW, screenH);
 
-        if (checkCapacitor) {
-          // Native Android APK: 100% fluid full-screen borderless layout
+        const availW = Math.min(clientWidth || window.innerWidth, realScreenW);
+        const availH = Math.min(clientHeight || window.innerHeight, realScreenH);
+
+        if (isFluid) {
+          // Full-screen fluid layout
           setScale(1);
         } else {
-          // Standard Web/Itch.io: EXACT original scaling logic to prevent any regression
+          // Standard Web/Itch.io desktop: scale simulated phone viewport
           const scaleX = availW / width;
           const scaleY = availH / height;
           setScale(Math.min(scaleX, scaleY));
@@ -48,8 +60,8 @@ export const BoundingBox: React.FC<GameLayerProps> = ({ width, height, children 
     };
   }, [width, height]);
 
-  // Capacitor runs borderless and fluid; Web uses simulated phone sizing
-  const innerStyle: React.CSSProperties = isCapacitor
+  // Fluid layouts run borderless and fluid; Web desktop uses simulated phone sizing
+  const innerStyle: React.CSSProperties = isFluidLayout
     ? {
         width: '100%',
         height: '100%',
@@ -61,6 +73,9 @@ export const BoundingBox: React.FC<GameLayerProps> = ({ width, height, children 
         transform: `scale(${scale})`,
         transformOrigin: 'center center',
         position: 'relative',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+        borderRadius: '16px',
+        overflow: 'hidden',
       };
 
   return (
