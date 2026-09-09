@@ -22,7 +22,8 @@ function getContrastInfo(hexColor: string) {
 }
 
 export const CarSelectModal: React.FC = () => {
-  const { carSelectOpen, setCarSelectOpen } = useGameStore();
+  const carSelectOpen = useGameStore((s) => s.carSelectOpen);
+  const setCarSelectOpen = useGameStore((s) => s.setCarSelectOpen);
   const currentPresetId = useCarConfigStore((s) => s.presetId);
 
   // Default to currently loaded preset or first car

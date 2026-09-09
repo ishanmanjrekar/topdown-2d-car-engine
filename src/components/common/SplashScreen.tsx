@@ -54,7 +54,7 @@ export const SplashScreen: React.FC = () => {
     return null;
   }
 
-  const splashUrl = `${import.meta.env.BASE_URL}splash.png`;
+  const splashUrl = `${import.meta.env.BASE_URL}splash.webp`;
 
   return (
     <div

@@ -43,7 +43,7 @@ This repository maintains modular, comprehensive documentation across the [`docs
 │   ┌────────────────────────┐                   ┌────────────────────────────┐  │
 │   │ TelemetryHUD           │                   │ CarSelectModal (Showroom)  │  │
 │   │ Speedometer, G-Force,  │                   │ 5 Rated Presets, Preview   │  │
-│   │ Drift Pill, Choose Car │                   │ [src/demo/]                │  │
+│   │ Drift Pill, Choose Car │                   │ (Atomic Zustand Selectors) │  │
 │   └───────────┬────────────┘                   └─────────────┬──────────────┘  │
 │               │                                              │                  │
 │               ▼                                              ▼                  │
@@ -55,9 +55,10 @@ This repository maintains modular, comprehensive documentation across the [`docs
 │                                            ▼                                   │
 │   ┌─────────────────────────────────────────────────────────────────────────┐  │
 │   │                     CarCanvas (Canvas 2D Viewport)                      │  │
-│   │   - requestAnimationFrame Game Loop via useGameLoop                     │  │
-│   │   - Pointer event ingestion -> unprojection to World Space              │  │
-│   │   - Multi-layer render: Track -> Particles -> Car -> Gizmo -> Debug     │  │
+│   │   - 120 Hz Fixed-Timestep Accumulator via useGameLoop (shouldRender)    │  │
+│   │   - Continuous Screen-to-World Pointer Tracking (pointerId filtered)    │  │
+│   │   - Modular Renderers: Track -> ParticleSystem -> CarRenderer           │  │
+│   │     -> GizmoRenderer -> DebugRenderer                                   │  │
 │   └────────────────────────────────────────┬────────────────────────────────┘  │
 └────────────────────────────────────────────┼────────────────────────────────────┘
                                              │
@@ -67,22 +68,23 @@ This repository maintains modular, comprehensive documentation across the [`docs
 │                                                                                 │
 │   ┌───────────────────────┐  Input Vectors   ┌──────────────────────────────┐   │
 │   │ RearTouchController   │ ───────────────> │ CarPhysics                   │   │
-│   │ (Throttle, Steer,     │                  │ - Longitudinal acceleration  │   │
-│   │  Anchor math)         │                  │ - Active braking             │   │
-│   └───────────────────────┘                  │ - Lateral drift decay        │   │
-│                                              │ - Tire scrub & slip angles   │   │
+│   │ - Continuous anchor   │                  │ - 120 Hz Fixed Timestep      │   │
+│   │ - In-place gizmo      │                  │ - Zero-allocation buffers    │   │
+│   │   mutation            │                  │ - Longitudinal & Braking     │   │
+│   └───────────────────────┘                  │ - Lateral drift friction     │   │
 │                                              └──────────────┬───────────────┘   │
 │                                                             │ Position (x,y)    │
 │   ┌───────────────────────┐                  Lookahead Pos  │ Heading θ         │
 │   │ Camera                │ <───────────────────────────────┘                   │
-│   │ - Smooth follow       │                                                     │
-│   │ - Lookahead vector    │                  Wheel Positions                    │
+│   │ - Exponential damping │                                                     │
+│   │ - Speed lookahead     │                  Wheel Coordinates (Float64Array)   │
 │   │ - Car-up rotation     │ ─────────────────────────────────┐                  │
 │   └───────────────────────┘                                  ▼                  │
 │                                              ┌──────────────────────────────┐   │
-│                                              │ ParticleSystem & Skid Marks  │   │
-│                                              │ - Wheel hub coordinate marks │   │
-│                                              │ - Dynamic smoke expansion    │   │
+│                                              │ ParticleSystem (Skid Marks)  │   │
+│                                              │ - Batched 3-bucket alpha     │   │
+│                                              │ - In-place array compaction  │   │
+│                                              │ - Zero-allocation smoke      │   │
 │                                              └──────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -93,32 +95,51 @@ This repository maintains modular, comprehensive documentation across the [`docs
 
 ### 4.1 Physics Core (`src/engine/CarPhysics.ts`)
 - **State Representation**: World coordinates $(x, y)$, heading angle $\theta \in [-\pi, \pi]$, world velocity $(v_x, v_y)$, and angular velocity $\omega$.
+- **Zero-Allocation Hot Loop**: Uses preallocated `wheelBuffer` (`Float64Array(8)`) and `rearBumperBuffer` to evaluate wheel hubs and bumper points without heap garbage collection during frames.
 - **Coordinate Transformation**: Resolves velocity vectors into local forward $v_{\text{long}}$ and lateral $v_{\text{lat}}$ components.
 - **Powertrain & Braking**: Forward drive accelerates up to `config.maxSpeed`. Negative throttle triggers active braking deceleration when forward velocity exceeds $10\text{ px/s}$.
-- **Lateral Drift Model**: Per-frame exponential decay of $v_{\text{lat}}$ governed by `driftFactor`. High drift factor allows sustained powerslides; low drift factor mimics slick racing slicks.
+- **Lateral Drift Model**: Per-frame exponential decay of $v_{\text{lat}}$ governed by `driftFactor`. High drift factor allows sustained powerslides; low drift factor mimics sticky racing slicks.
 - **Tire Scrub**: Sideways slides and steered front wheels impose kinetic drag, naturally bleeding speed during hard donuts and drifts.
 - **Wheel Geometry**: Evaluates all 4 wheel hubs $(x_{\text{hub}}, y_{\text{hub}})$ with front wheel steering angles for accurate skid mark placement.
 
 ### 4.2 Control Pipeline (`src/engine/RearTouchController.ts`)
 - Projects an anchor point $55\text{ px}$ behind the car's rear bumper.
+- **Continuous Tracking**: The canvas tracks `(screenX, screenY)` and re-projects to world coordinates every frame via `camera.screenToWorld()`, preventing stale coordinates when holding a finger stationary.
 - Maps the touch offset vector $(\Delta_{\text{fwd}}, \Delta_{\text{side}})$ into:
   - **Push Throttle**: Forward push behind the car accelerates. Touching ahead of the anchor activates brakes or reverse.
   - **Counter-Steer Torque**: Sliding laterally steers the car in an intuitive push-behind motion.
   - **Deadzone & Normalization**: Built-in deadzone prevents steering wobble during straightaway acceleration.
+- **In-Place Gizmo State**: Mutates a persistent `gizmo` object rather than creating new objects during active touch gestures.
 
 ### 4.3 Chase Camera (`src/engine/Camera.ts`)
 - Follows the car with exponential damping.
 - Projects a lookahead point forward along the velocity vector so the driver has sight distance ahead.
 - Rotates the canvas view to keep the car facing upwards with $40\%$ screen margin at the bottom, providing ample thumb room for touch gestures.
+- Provides `screenToWorld(sx, sy, out)` and `worldToScreen(wx, wy, out)` matrix transformations.
 
-### 4.4 Decoupled Demo Layer (`src/demo/`)
+### 4.4 Modular Renderers (`src/engine/renderers/`)
+- **CarRenderer (`CarRenderer.ts`)**: Procedural vector chassis with gradient liveries, aero wings, carbon splitters, glowing headlights, and braking taillights.
+- **GizmoRenderer (`GizmoRenderer.ts`)**: Rear-touch push-behind UI gizmo with spring lines, anchor rings, steering arcs, and tactile touch feedback.
+- **DebugRenderer (`DebugRenderer.ts`)**: Visualizes capsule collision spines, velocity vectors, lookahead targets, and wheel contact normals.
+
+### 4.5 Demo Track & Collision (`src/demo/track/DemoTrack.ts`)
+- **Capsule Collision**: Replaced single-point circular hitboxes with a swept two-circle capsule ($r=17\text{ px}$, spine length $36\text{ px}$) that accurately hugs vehicle chassis proportions and prevents corner clipping.
+- **Radial Arc Surface Detection**: Exact analytical polar angle & distance checks for the North Sweeper and South Hairpin turns for tarmac vs. grass surface resistance.
+- **Optimized Rendering**: Zero `shadowBlur` calls to prevent GPU compositor stalls on mobile and high-DPI displays.
+
+### 4.6 Fixed Timestep Game Loop (`src/hooks/useGameLoop.ts`)
+- Implements a fixed-timestep accumulator running physics at a deterministic $120\text{ Hz}$ ($dt = 1/120\text{ s}$).
+- Prevents physics tunneling, stability breakdown on high-refresh displays ($120\text{ Hz}$, $144\text{ Hz}$, $240\text{ Hz}$), and sluggishness on $60\text{ Hz}$ screens.
+- Emits a `shouldRender` boolean flag on the terminal sub-step, avoiding redundant canvas paint calls during multiple accumulator iterations.
+
+### 4.7 Decoupled Demo Layer (`src/demo/`)
 - Contains the 5 pre-tuned vehicle presets ([`src/demo/carPresets.ts`](../src/demo/carPresets.ts)):
   1. **Apex GT**: Balanced Starter (3/3/3)
   2. **Track Phantom**: Grip Specialist with GT wing (4/4/5)
   3. **Tokyo Drifter**: Street Drift Tuner with dual fins (4/4/2)
   4. **Iron V8 Muscle**: Heavy American Muscle (3/5/1)
   5. **Hyperion XLR**: Prototype Hypercar (5/4/4)
-- **Showroom UI** ([`src/demo/components/CarSelectModal.tsx`](../src/demo/components/CarSelectModal.tsx)): Interactive modal featuring high-res top-down vector car previews, 3-stat ratings, and an instant, non-resetting **DRIVE** action.
+- **Showroom UI** ([`src/demo/components/CarSelectModal.tsx`](../src/demo/components/CarSelectModal.tsx)): Interactive modal featuring high-res top-down vector car previews, 3-stat ratings, atomic Zustand state subscriptions, and an instant, non-resetting **DRIVE** action.
 
 ---
 
@@ -138,6 +159,8 @@ $$\text{LateralGrip} \propto \text{HandlingRating} \implies \text{driftFactor} =
 
 For detailed instructions on extending or customizing the engine:
 - To strip the demo and use in another project: See **[Integration Guide (`docs/INTEGRATION_GUIDE.md`)](./INTEGRATION_GUIDE.md)**.
-- To create custom tracks or obstacle courses: See **[Track Geometry (`src/engine/Track.ts`)](../src/engine/Track.ts)**.
-- To replace procedural canvas cars with custom PNG/SVG sprites: See **[Integration Guide - Section 3](./INTEGRATION_GUIDE.md#3-custom-vehicle-graphics--sprites)**.
+- To create custom tracks or obstacle courses: See **[Demo Track Geometry (`src/demo/track/DemoTrack.ts`)](../src/demo/track/DemoTrack.ts)**.
+- To customize vehicle graphics or modular renderers: See **[CarRenderer (`src/engine/renderers/CarRenderer.ts`)](../src/engine/renderers/CarRenderer.ts)** and **[Integration Guide - Section 3](./INTEGRATION_GUIDE.md#3-custom-vehicle-graphics--sprites)**.
+- To run automated unit tests: Run `npm test` (`src/engine/__tests__/`).
 - To give full repository context to an AI coding assistant: See **[AI Context Card (`docs/AGENTS.md`)](./AGENTS.md)**.
+

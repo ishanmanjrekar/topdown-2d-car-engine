@@ -11,14 +11,13 @@ export const DebugMenu: React.FC = () => {
   const setControlMode = useGameStore((s) => s.setControlMode);
   const config = useCarConfigStore();
 
-  if (!debugMenuOpen) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      {debugMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         style={{
           position: 'absolute',
           inset: 0,
@@ -367,6 +366,7 @@ export const DebugMenu: React.FC = () => {
           </div>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 };

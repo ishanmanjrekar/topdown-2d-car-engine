@@ -103,34 +103,36 @@ Because the game supports responsive scaling (`BoundingBox.tsx`) and dynamic cam
 flowchart LR
     P[PointerEvent clientX, clientY] --> B[BoundingBox Scaler scaleX, scaleY]
     B --> S[Screen Canvas Space screenX, screenY]
-    S --> C[Camera.screenToWorld unproject]
+    S --> L[useGameLoop: Continuous Per-Frame Tick]
+    L --> C[Camera.screenToWorld unproject]
     C --> W[World Space touchWorldX, touchWorldY]
     W --> R[RearTouchController.update]
 ```
 
-1. **Pointer Capture**:
+1. **Pointer Capture & Tracking**:
    - On `onPointerDown`, `(e.target as HTMLElement).setPointerCapture(e.pointerId)` locks all continuous gesture events to the canvas, preventing pointer loss when dragging near screen edges.
+   - The active pointer ID is captured to prevent multi-touch collisions from UI clicks or resting fingers.
 2. **Bounding Box Normalization**:
    - `rect = canvas.getBoundingClientRect()`
    - $\text{scaleX} = \text{logicalW} / \text{rect.width}$
    - $\text{scaleY} = \text{logicalH} / \text{rect.height}$
    - $\text{screenX} = (e.\text{clientX} - \text{rect.left}) \times \text{scaleX}$
    - $\text{screenY} = (e.\text{clientY} - \text{rect.top}) \times \text{scaleY}$
-3. **Camera Unprojection (`camera.screenToWorld`)**:
-   - Un-centers from the screen anchor:
+3. **Continuous Per-Frame Camera Unprojection (`camera.screenToWorld`)**:
+   - When a finger is held stationary on a touch screen, browsers fire *no* `pointermove` events.
+   - To maintain continuous forward throttle without requiring constant finger wiggling, the active screen coordinate `(screenX, screenY)` is stored and re-unprojected **on every frame of the game loop** using the latest camera position and rotation:
      $$\text{centeredX} = (\text{screenX} - W_{\text{view}} / 2) / \text{zoom}$$
      $$\text{centeredY} = (\text{screenY} - H_{\text{view}} \times 0.60) / \text{zoom}$$
-   - Un-rotates by the camera angle $\theta_{\text{cam}}$:
      $$x_{\text{rot}} = \text{centeredX} \cos(\theta_{\text{cam}}) - \text{centeredY} \sin(\theta_{\text{cam}})$$
      $$y_{\text{rot}} = \text{centeredX} \sin(\theta_{\text{cam}}) + \text{centeredY} \cos(\theta_{\text{cam}})$$
-   - Translates by the camera world position $(C_x, C_y)$:
      $$\vec{T}_{\text{world}} = (x_{\text{rot}} + C_x, y_{\text{rot}} + C_y)$$
+   - This ensures the relative distance between vehicle rear bumper and touch point remains stable while the car travels at high speed.
 
 ---
 
-## Interactive Visual Gizmo (`drawRearTouchGizmo`)
+## Interactive Visual Gizmo (`src/engine/renderers/GizmoRenderer.ts`)
 
-When `showTouchGizmo` is active and touch is detected, the canvas overlays a reactive HUD gizmo:
+When `showTouchGizmo` is active and touch is detected, the canvas overlays a reactive HUD gizmo (modularized in [`GizmoRenderer.ts`](../src/engine/renderers/GizmoRenderer.ts)):
 1. **Rear Anchor Point**: Cyan dot ($r = 6\text{ px}$, `#00f2fe`) drawn at the vehicle's rear bumper.
 2. **Push Radius Circle**: Semi-transparent cyan boundary ring ($r = R_{\text{push}}$, `rgba(0, 242, 254, 0.2)`) visualizing the $100\%$ throttle push limit.
 3. **Deadzone Dashed Ring**: Subtle dashed circle ($r = \epsilon_{\text{deadzone}}$, line dash `[4, 4]`) visualizing the neutral deadband.

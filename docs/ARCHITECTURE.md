@@ -36,14 +36,22 @@ topdown-2d-car-engine/
 │   │   └── game/
 │   │       └── CarCanvas.tsx            # Primary simulation loop, input handlers, and multi-layer renderer
 │   ├── engine/
-│   │   ├── CarPhysics.ts                # 2D vehicle dynamics, friction, drift decay, and wheel geometry
-│   │   ├── RearTouchController.ts       # Rear bumper anchor push-to-drive & steer math
+│   │   ├── CarPhysics.ts                # 2D vehicle dynamics, friction, drift decay, and zero-allocation wheel buffer
+│   │   ├── RearTouchController.ts       # Rear bumper anchor push-to-drive & steer math (in-place telemetry)
 │   │   ├── Camera.ts                    # Dynamic follow camera with speed lookahead and car-up rotation
-│   │   ├── ParticleSystem.ts            # Tire skid mark persistence and smoke puff simulation
+│   │   ├── ParticleSystem.ts            # Batched tire skid mark persistence and smoke puff simulation
 │   │   ├── ITrack.ts                    # Generic track & collision contract with surface properties
-│   │   └── Track.ts                     # Standalone fallback rectangular arena implementing ITrack
+│   │   ├── Track.ts                     # Standalone fallback rectangular arena implementing ITrack
+│   │   ├── renderers/                   # Modular Canvas 2D renderers
+│   │   │   ├── CarRenderer.ts           # Procedural chassis, wheels, headlights, brake glow & aero
+│   │   │   ├── GizmoRenderer.ts         # Rear-touch interactive tether & circle HUD gizmo
+│   │   │   └── DebugRenderer.ts         # Real-time velocity, heading & drift vector renderer
+│   │   └── __tests__/                   # Automated Vitest simulation test suites
+│   │       ├── CarPhysics.test.ts       # Powertrain, braking, drag decay & reverse steering tests
+│   │       ├── RearTouchController.test.ts # Anchor math, deadzones & push-steer tests
+│   │       └── Camera.test.ts           # Coordinate projection & bijective inversion tests
 │   ├── hooks/
-│   │   └── useGameLoop.ts               # requestAnimationFrame loop with clamped delta time (max 100ms)
+│   │   └── useGameLoop.ts               # Fixed-timestep (120Hz) accumulator loop with shouldRender flag
 │   ├── stores/
 │   │   ├── useCarConfigStore.ts         # Zustand store for physics tuning constants & presets
 │   │   └── useGameStore.ts              # Zustand store for control mode, telemetry state, and UI toggles
@@ -110,49 +118,56 @@ The camera delivers a dynamic chase-cam experience tailored for portrait phone s
 
 ## Game Loop & Simulation Pipeline
 
-The game loop runs via `useGameLoop` (driven by `requestAnimationFrame`) with delta-time clamping ($\Delta t \le 100\text{ ms}$) to prevent physics explosions on background tab switching:
+The game loop runs via `useGameLoop` with a **120 Hz fixed-timestep accumulator** (`fixedStepMs = 1000 / 120 ≈ 8.33ms`) and frame-time clamping ($\Delta t \le 100\text{ ms}$). This guarantees deterministic vehicle handling and drift friction decay across 60 Hz, 120 Hz, and mobile throttled displays, while executing Canvas 2D rendering only on display frames (`shouldRender = true`):
 
 ```mermaid
 flowchart TD
-    A[Pointer / Touch Event] --> B[BoundingBox Scale Normalization]
-    B --> C[Camera.screenToWorld]
-    C --> D[RearTouchController.update]
-    D --> E[CarPhysics.update]
-    Keyboard[Keyboard WASD / Arrows] --> E
-    E --> F[Track Collisions: Cones & Arena Walls]
-    F --> G[ParticleSystem: Tire Skids & Smoke]
-    G --> H[Camera.update Follow & Lookahead]
-    H --> I[Telemetry HUD Throttled Update 5Hz]
-    I --> J[Canvas Multi-Layer Render Pass]
+    P[Active Pointer Event: clientX, clientY] --> B[BoundingBox Scale Normalization]
+    B --> S[Screen Canvas Space: screenX, screenY]
+    S --> U[Per-Frame Camera.screenToWorld Unprojection]
+    U --> R[RearTouchController.update]
+    Keyboard[Keyboard WASD / Arrows Override] --> C
+    R --> C[CarPhysics.update Fixed Step]
+    C --> T[Track Collisions: Capsule Swept Bounds & Props]
+    T --> PS[ParticleSystem: Batched Skids & Smoke]
+    PS --> Cam[Camera.update Follow & Lookahead]
+    Cam --> HUD[Telemetry HUD Throttled Update 18Hz]
+    HUD --> Render{shouldRender?}
+    Render -- Yes --> Canvas[Modular Render Pass: Track, Skids, Car, Gizmo]
+    Render -- No --> NextStep[Next Physics Substep]
 ```
 
 ### Pipeline Execution Steps:
-1. **Input Sampling**:
+1. **Input Sampling & Continuous Hold Projection**:
+   - Touch coordinates are tracked in screen space. Every frame, `camera.screenToWorld()` unprojects the current thumb position to world coordinates, maintaining steady throttle even when holding a thumb completely stationary.
    - In `rear-touch` mode, the touch world coordinate is projected against the car's rear bumper anchor point.
    - Computes normalized throttle $[-1..1]$ and steering $[-1..1]$ signals.
    - Keyboard inputs (`WASD` or Arrow keys) remain active as developer overrides.
 2. **Physics Integration (`CarPhysics.update`)**:
+   - Stepped at fixed discrete intervals ($\Delta t = 1/120\text{s}$).
    - Projects current global velocity $(v_x, v_y)$ into vehicle local longitudinal and lateral axes.
    - Applies powertrain drive acceleration or active braking / reverse force.
    - Applies natural rolling drag decay: $v_{\text{long}} \times (\text{naturalDrag})^{\Delta t \cdot 60}$.
    - Applies lateral tire friction decay: $v_{\text{lat}} \times (\text{driftFactor})^{\Delta t \cdot 60}$.
    - Computes speed-dependent steering authority with smooth angular velocity convergence.
    - Reconstructs global velocity and integrates world position $(x, y)$ and heading angle $\theta$.
-   - Evaluates slip angle and flags drift state if slip angle $> 16^\circ$ and speed $> 80\text{ px/s}$.
-3. **Collision Detection & Response (`Track.ts`)**:
-   - **Perimeter Arena Walls**: Constrains car inside $[-1300, 1300]\text{ px}$ bounding box with elastic bounce ($e = 0.35$), wall sliding friction ($0.75$), and angular velocity damping ($0.4$).
-   - **Slalom & Chicane Cones**: Circle-circle collision between car radius ($26\text{ px}$) and cone radius ($10\text{ px}$) triggers cone knockdown state.
+   - Evaluates slip angle and flags drift state if slip angle $> 16^\circ$ and speed $> 45\text{ px/s}$.
+3. **Collision Detection & Response (`Track.ts` / `DemoTrack.ts`)**:
+   - **Perimeter Arena Walls**: Constrains car inside arena boundaries (`[-1200, 1200]` in `Track.ts`, `[-1350, 1350]` in `DemoTrack.ts`) with elastic bounce ($e = 0.45$), wall sliding friction ($0.85$), and angular velocity damping ($0.4$).
+   - **Obstacles & Cones (Two-Circle Swept Capsule)**: In `DemoTrack.ts`, obstacles are tested against a swept spine capsule (radius $17\text{ px}$, spine length $36\text{ px}$ from rear to front axle), preventing front bumper and rear tail clipping through trees, barriers, and cones.
 4. **Particle & Skid System (`ParticleSystem.ts`)**:
-   - Tracks world positions of all 4 wheels via `car.getWheelPositions()`.
+   - Tracks world positions of all 4 wheels via zero-allocation `car.getWheelPositions()`.
    - Records persistent tire skid mark segments when drifting or hard braking.
+   - Segments are rendered in batched alpha buckets, dropping draw calls from ~600 down to 3.
    - Emits expanding semi-transparent smoke puffs behind sliding wheels.
-   - Fades older skid marks over time and caps max segment buffer to prevent memory leaks.
 5. **Camera Tracking (`Camera.ts`)**:
    - Smoothly updates camera focus position with forward velocity lookahead and heading rotation.
 6. **Telemetry Dispatch (`TelemetryHUD.tsx`)**:
-   - Throttled to $200\text{ ms}$ intervals to avoid unnecessary React re-renders.
-   - Publishes speed ($\text{px/s}$ and $\text{km/h}$), slip angle, estimated lateral G-force, throttle, steering, drift flag, and measured FPS to `useGameStore`.
+   - Throttled to $55\text{ ms}$ ($\sim 18\text{ Hz}$) intervals using atomic Zustand selectors to avoid redundant React re-renders.
+   - Publishes ground displacement speed ($\text{px/s}$ and $\text{km/h}$), slip angle, estimated lateral G-force, throttle, steering, drift flag, and measured FPS to `useGameStore`.
 7. **Canvas Render Pass (`CarCanvas.tsx`)**:
+   - Executed only when `shouldRender = true` on the final substep before display presentation.
+   - Delegates to modular renderers: `track.render()`, `particles.render()`, `drawRearTouchGizmo()`, `drawCar()`, and `drawDebugVectors()`.
    - **Layer 1**: Clear canvas and apply camera transformation matrix.
    - **Layer 2**: Track environment — lush grass lawn, dark asphalt arena ground, coordinate grid lines, curb barriers, finish line, slalom cones, trees, and billboards.
    - **Layer 3**: Particle layer — persistent skid marks and smoke particles.

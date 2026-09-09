@@ -106,18 +106,16 @@ export class RearTouchController {
     }
     this.steer = rawSteer;
 
-    // 6. Update gizmo telemetry for debug HUD & canvas overlay
-    this.gizmo = {
-      isActive: true,
-      anchorWorldX: anchorX,
-      anchorWorldY: anchorY,
-      touchWorldX: this.touchWorldX,
-      touchWorldY: this.touchWorldY,
-      carHeading: car.angle,
-      throttle: this.throttle,
-      steer: this.steer,
-      pushDistance: pushBehindDist,
-      lateralOffset: deltaLat
-    };
+    // 6. Update gizmo telemetry for debug HUD & canvas overlay in-place (zero allocation)
+    this.gizmo.isActive = true;
+    this.gizmo.anchorWorldX = anchorX;
+    this.gizmo.anchorWorldY = anchorY;
+    this.gizmo.touchWorldX = this.touchWorldX;
+    this.gizmo.touchWorldY = this.touchWorldY;
+    this.gizmo.carHeading = car.angle;
+    this.gizmo.throttle = this.throttle;
+    this.gizmo.steer = this.steer;
+    this.gizmo.pushDistance = pushBehindDist;
+    this.gizmo.lateralOffset = deltaLat;
   }
 }

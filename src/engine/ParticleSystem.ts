@@ -21,10 +21,22 @@ export interface SkidSegment {
 export class ParticleSystem {
   public particles: Particle[] = [];
   public skidSegments: SkidSegment[] = [];
-  private lastWheelPos: Map<number, { x: number; y: number }> = new Map();
+
+  // Zero-allocation previous wheel coordinate tracking
+  private prevWheelX: Float64Array = new Float64Array(4);
+  private prevWheelY: Float64Array = new Float64Array(4);
+  private hasPrevWheel: Uint8Array = new Uint8Array(4);
+
   private readonly maxSkidSegments: number = 600;
 
-  public addSmoke(x: number, y: number, baseVx: number, baseVy: number, count: number = 2, colorPrefix: string = 'rgba(210, 220, 235,') {
+  public addSmoke(
+    x: number,
+    y: number,
+    baseVx: number,
+    baseVy: number,
+    count: number = 2,
+    colorPrefix: string = 'rgba(210, 220, 235,'
+  ) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 25 + 5;
@@ -42,29 +54,37 @@ export class ParticleSystem {
   }
 
   public recordTireMark(wheelIndex: number, x: number, y: number, isDrifting: boolean, speed: number) {
-    const prev = this.lastWheelPos.get(wheelIndex);
-    if (isDrifting && prev && speed > 50) {
-      const dist = Math.hypot(x - prev.x, y - prev.y);
+    if (wheelIndex < 0 || wheelIndex >= 4) return;
+
+    if (this.hasPrevWheel[wheelIndex] && isDrifting && speed > 50) {
+      const px = this.prevWheelX[wheelIndex];
+      const py = this.prevWheelY[wheelIndex];
+      const dist = Math.hypot(x - px, y - py);
+
       if (dist > 3 && dist < 50) {
+        if (this.skidSegments.length >= this.maxSkidSegments) {
+          // Remove oldest segment efficiently
+          this.skidSegments.splice(0, 1);
+        }
+
         this.skidSegments.push({
-          x1: prev.x,
-          y1: prev.y,
+          x1: px,
+          y1: py,
           x2: x,
           y2: y,
           alpha: Math.min(0.55, speed / 300),
           width: 5
         });
-
-        if (this.skidSegments.length > this.maxSkidSegments) {
-          this.skidSegments.shift();
-        }
       }
     }
-    this.lastWheelPos.set(wheelIndex, { x, y });
+
+    this.prevWheelX[wheelIndex] = x;
+    this.prevWheelY[wheelIndex] = y;
+    this.hasPrevWheel[wheelIndex] = 1;
   }
 
   public update(dt: number) {
-    // Update and prune smoke particles
+    // 1. Update and prune smoke particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx * dt;
@@ -76,26 +96,73 @@ export class ParticleSystem {
       }
     }
 
-    // Slowly fade older skid marks
+    // 2. In-place fade and compact skid marks (zero array allocations)
+    let writeIdx = 0;
+    const fade = 0.008 * dt;
     for (let i = 0; i < this.skidSegments.length; i++) {
-      this.skidSegments[i].alpha -= 0.008 * dt;
+      const seg = this.skidSegments[i];
+      seg.alpha -= fade;
+      if (seg.alpha > 0.04) {
+        this.skidSegments[writeIdx++] = seg;
+      }
     }
-    this.skidSegments = this.skidSegments.filter((s) => s.alpha > 0.05);
+    this.skidSegments.length = writeIdx;
   }
 
+  /**
+   * Batched render pass grouping skid segments into alpha bands
+   * reducing 600 separate draw calls down to 3 batched stroke passes.
+   */
   public render(ctx: CanvasRenderingContext2D) {
-    // 1. Draw Skid Marks
-    if (this.skidSegments.length > 0) {
+    // 1. Batched Skid Marks
+    const len = this.skidSegments.length;
+    if (len > 0) {
       ctx.save();
       ctx.lineCap = 'round';
-      for (const seg of this.skidSegments) {
-        ctx.strokeStyle = `rgba(18, 18, 22, ${seg.alpha.toFixed(3)})`;
-        ctx.lineWidth = seg.width;
+      ctx.lineWidth = 5;
+
+      // Group into 3 alpha buckets to avoid per-segment context state changes and string allocations
+      const bucketHeavy: SkidSegment[] = [];
+      const bucketMed: SkidSegment[] = [];
+      const bucketLight: SkidSegment[] = [];
+
+      for (let i = 0; i < len; i++) {
+        const seg = this.skidSegments[i];
+        if (seg.alpha > 0.35) bucketHeavy.push(seg);
+        else if (seg.alpha > 0.18) bucketMed.push(seg);
+        else bucketLight.push(seg);
+      }
+
+      if (bucketHeavy.length > 0) {
+        ctx.strokeStyle = 'rgba(18, 18, 22, 0.45)';
         ctx.beginPath();
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
+        for (const s of bucketHeavy) {
+          ctx.moveTo(s.x1, s.y1);
+          ctx.lineTo(s.x2, s.y2);
+        }
         ctx.stroke();
       }
+
+      if (bucketMed.length > 0) {
+        ctx.strokeStyle = 'rgba(18, 18, 22, 0.28)';
+        ctx.beginPath();
+        for (const s of bucketMed) {
+          ctx.moveTo(s.x1, s.y1);
+          ctx.lineTo(s.x2, s.y2);
+        }
+        ctx.stroke();
+      }
+
+      if (bucketLight.length > 0) {
+        ctx.strokeStyle = 'rgba(18, 18, 22, 0.12)';
+        ctx.beginPath();
+        for (const s of bucketLight) {
+          ctx.moveTo(s.x1, s.y1);
+          ctx.lineTo(s.x2, s.y2);
+        }
+        ctx.stroke();
+      }
+
       ctx.restore();
     }
 
@@ -115,6 +182,6 @@ export class ParticleSystem {
   public clear() {
     this.particles = [];
     this.skidSegments = [];
-    this.lastWheelPos.clear();
+    this.hasPrevWheel.fill(0);
   }
 }

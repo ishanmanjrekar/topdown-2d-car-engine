@@ -86,10 +86,10 @@ On top of this engine, help me build:
 ## 🧩 How to Reuse & Extend This Engine
 
 ### 1. Designing Custom Tracks or Arenas
-Open [`src/engine/Track.ts`](./src/engine/Track.ts):
+Open [`src/demo/track/DemoTrack.ts`](./src/demo/track/DemoTrack.ts) (or create your own implementation implementing [`src/engine/Track.ts`](./src/engine/Track.ts)):
 - Modify `this.bounds` to change the arena dimensions.
-- Edit `this.innerCones` and `this.outerCones` to lay out custom track circuits or obstacle courses.
-- Add collision geometry inside `checkWallCollision()` or register custom obstacle bounding boxes.
+- Customize the racing circuit path, radial sweeper arcs, or surface friction mappings in `getSurfaceAt(x, y)`.
+- Configure track obstacles (trees, cones, tires) and leverage the swept-spine capsule collision system (`checkObstacleCollision()`).
 
 ### 2. Adding Game Rules & Objectives (Laps, Pursuit, Delivery)
 The vehicle coordinates (`car.x`, `car.y`, `car.speed`, `car.angle`) are available on every frame in `CarCanvas.tsx` or via `useGameStore.ts`. You can easily add:
@@ -98,8 +98,8 @@ The vehicle coordinates (`car.x`, `car.y`, `car.speed`, `car.angle`) are availab
 - **Collectibles & Targets**: Render pickup nodes on the canvas and check bounding circle intersections.
 
 ### 3. Custom Vehicle Graphics
-By default, `CarCanvas.tsx` renders a sleek procedural vector sports car with headlights, brake lights, and wheels. To use a custom sprite or 2D spritesheet:
-- Replace `drawCar()` in `CarCanvas.tsx` with `ctx.drawImage(myCarSprite, -width/2, -height/2, width, height)`.
+By default, [`src/engine/renderers/CarRenderer.ts`](./src/engine/renderers/CarRenderer.ts) renders a sleek procedural vector sports car with headlights, brake lights, and wheels. To use a custom sprite or 2D spritesheet:
+- Update `CarRenderer.render()` to use `ctx.drawImage(myCarSprite, -width/2, -height/2, width, height)`.
 
 ---
 
@@ -108,17 +108,25 @@ By default, `CarCanvas.tsx` renders a sleek procedural vector sports car with he
 ```text
 topdown-2d-car-engine/
 ├── docs/                      # Architectural & mathematical documentation
+│   ├── DESIGN_DOC.md          # Complete system design & component contracts
 │   ├── ARCHITECTURE.md        # Pipeline, viewport scaling & state management
 │   ├── CONTROLS_REAR_TOUCH.md # Rear-touch steering math & touch unprojection
-│   └── VEHICLE_PHYSICS.md     # Lateral drift friction decay & presets
+│   ├── VEHICLE_PHYSICS.md     # Lateral drift friction decay & presets
+│   ├── UI_ART_DIRECTION.md    # Art direction & 60s single-file re-skinning
+│   ├── INTEGRATION_GUIDE.md   # Headless embedding & custom sprites
+│   └── AGENTS.md              # AI coding agent context & prompt templates
 ├── scripts/                   # Automated build & packaging scripts
 │   ├── build-apk.ps1          # Compiles signed/debug Android APK
-│   ├── build-itch.ps1         # Compiles zip bundle for itch.io web sandbox
+│   ├── build-itch.ps1         # Compiles zip bundle for itch.io web sandbox (auto-prunes dump/)
 │   └── setup-mobile-env.ps1   # Bootstraps local portable JDK & Android SDK
 ├── src/                       # Game engine source code
-│   ├── components/            # React UI overlay components (HUD, TuningDrawer, BoundingBox)
-│   ├── engine/                # Core physics, camera, particle system, and canvas renderer
+│   ├── components/            # React UI overlays (HUD, TuningDrawer, BoundingBox)
+│   ├── engine/                # Core physics, camera, particle system, and modular renderers
+│   │   ├── renderers/         # Decoupled Canvas renderers (CarRenderer, GizmoRenderer, DebugRenderer)
+│   │   └── __tests__/         # Automated Vitest test suite for physics, controls, and camera
+│   ├── hooks/                 # 120 Hz fixed-timestep game loop (useGameLoop)
 │   ├── stores/                # Zustand state stores (physics parameters, telemetry)
+│   ├── demo/                  # Decoupled showroom layer (presets, track, preview modal)
 │   ├── App.tsx                # Main canvas mount & orchestration
 │   └── main.tsx               # Application entry point
 ├── capacitor.config.ts        # Capacitor mobile native shell configuration
@@ -158,7 +166,11 @@ When testing on desktop without touch, keyboard overrides are enabled:
 
 ## 🛠️ Build & Export Commands
 
-- **Web Build**:
+- **Run Automated Tests**:
+  ```bash
+  npm test
+  ```
+- **Web Production Build**:
   ```bash
   npm run build
   ```

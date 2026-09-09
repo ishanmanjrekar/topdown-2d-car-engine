@@ -8,6 +8,9 @@ import { ITrack } from '../../engine/ITrack';
 import { DemoTrack } from '../../demo/track/DemoTrack';
 import { useCarConfigStore } from '../../stores/useCarConfigStore';
 import { useGameStore } from '../../stores/useGameStore';
+import { drawCar } from '../../engine/renderers/CarRenderer';
+import { drawRearTouchGizmo } from '../../engine/renderers/GizmoRenderer';
+import { drawDebugVectors } from '../../engine/renderers/DebugRenderer';
 
 export interface CarCanvasProps {
   track?: ITrack;
@@ -62,6 +65,8 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
     if (typeof trackRef.current?.reset === 'function') {
       trackRef.current.reset();
     }
+    pointerRef.current.active = false;
+    pointerRef.current.pointerId = null;
     controllerRef.current.setTouch(false);
   }, []);
 
@@ -150,26 +155,20 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Pointer / Touch Handlers for Rear-Touch Control
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    updatePointerWorldPos(e);
-  };
+  // Pointer tracking for continuous touch-behind control
+  const pointerRef = useRef<{
+    active: boolean;
+    pointerId: number | null;
+    screenX: number;
+    screenY: number;
+  }>({
+    active: false,
+    pointerId: null,
+    screenX: 0,
+    screenY: 0
+  });
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (controllerRef.current.isTouching) {
-      updatePointerWorldPos(e);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
-    controllerRef.current.setTouch(false);
-  };
-
-  const updatePointerWorldPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const updatePointerScreenCoords = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -177,18 +176,39 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
     const logicalW = parent?.clientWidth || 480;
     const logicalH = parent?.clientHeight || 880;
 
-    // Correctly scale pointer coordinates from screen-space bounding rect to logical canvas pixels
     const scaleX = logicalW / rect.width;
     const scaleY = logicalH / rect.height;
-    const screenX = (e.clientX - rect.left) * scaleX;
-    const screenY = (e.clientY - rect.top) * scaleY;
+    pointerRef.current.screenX = (clientX - rect.left) * scaleX;
+    pointerRef.current.screenY = (clientY - rect.top) * scaleY;
+  };
 
-    const world = cameraRef.current.screenToWorld(screenX, screenY);
-    controllerRef.current.setTouch(true, world.x, world.y);
+  // Pointer / Touch Handlers for Rear-Touch Control
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    pointerRef.current.active = true;
+    pointerRef.current.pointerId = e.pointerId;
+    updatePointerScreenCoords(e.clientX, e.clientY);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (pointerRef.current.active && pointerRef.current.pointerId === e.pointerId) {
+      updatePointerScreenCoords(e.clientX, e.clientY);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (pointerRef.current.pointerId === e.pointerId) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+      pointerRef.current.active = false;
+      pointerRef.current.pointerId = null;
+      controllerRef.current.setTouch(false);
+    }
   };
 
   // Main Simulation & Render Loop
-  useGameLoop((dtMs) => {
+  useGameLoop((dtMs, shouldRender) => {
     if (isPaused) return;
 
     const dt = dtMs / 1000;
@@ -203,6 +223,14 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
     let steer = 0;
 
     if (controlMode === 'rear-touch') {
+      if (pointerRef.current.active) {
+        // Continuous per-frame unprojection guarantees steady throttle when thumb is held stationary
+        const world = camera.screenToWorld(pointerRef.current.screenX, pointerRef.current.screenY);
+        controller.setTouch(true, world.x, world.y);
+      } else {
+        controller.setTouch(false);
+      }
+
       controller.update(car, config);
       throttle = controller.throttle;
       steer = controller.steer;
@@ -299,7 +327,9 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
       });
     }
 
-    // 6. Canvas Render
+    // 7. Canvas Render Pass (Only executed on final substep before screen presentation)
+    if (!shouldRender) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -355,244 +385,3 @@ export const CarCanvas: React.FC<CarCanvasProps> = ({ track: externalTrack }) =>
     />
   );
 };
-
-/**
- * Renders the Rear-Touch Push interactive circle and tether gizmo
- */
-function drawRearTouchGizmo(
-  ctx: CanvasRenderingContext2D,
-  gizmo: RearTouchController['gizmo'],
-  config: ReturnType<typeof useCarConfigStore.getState>
-) {
-  ctx.save();
-
-  // 1. Rear Bumper Anchor Point
-  ctx.fillStyle = '#00f2fe';
-  ctx.beginPath();
-  ctx.arc(gizmo.anchorWorldX, gizmo.anchorWorldY, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Push-zone boundary circle centered at the anchor
-  ctx.strokeStyle = 'rgba(0, 242, 254, 0.2)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(gizmo.anchorWorldX, gizmo.anchorWorldY, config.rearPushRadius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Deadzone circle
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.arc(gizmo.anchorWorldX, gizmo.anchorWorldY, config.rearDeadzone, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // 2. Elastic Tether Line from Rear Anchor to Finger
-  const isAccelerating = gizmo.throttle > 0;
-  const isBraking = gizmo.throttle < 0;
-  const tetherColor = isBraking ? '#ff3366' : isAccelerating ? '#00f2fe' : '#94a3b8';
-
-  ctx.strokeStyle = tetherColor;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(gizmo.anchorWorldX, gizmo.anchorWorldY);
-  ctx.lineTo(gizmo.touchWorldX, gizmo.touchWorldY);
-  ctx.stroke();
-
-  // 3. Finger Touch Point Indicator Ring
-  ctx.fillStyle = isBraking ? 'rgba(255, 51, 102, 0.3)' : 'rgba(0, 242, 254, 0.3)';
-  ctx.beginPath();
-  ctx.arc(gizmo.touchWorldX, gizmo.touchWorldY, 22, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = tetherColor;
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.arc(gizmo.touchWorldX, gizmo.touchWorldY, 22, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Center touch dot
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(gizmo.touchWorldX, gizmo.touchWorldY, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-/**
- * Renders stylized vehicle chassis with wheels, windows, headlights & brake glow
- */
-function drawCar(
-  ctx: CanvasRenderingContext2D,
-  car: CarPhysics,
-  config: ReturnType<typeof useCarConfigStore.getState>,
-  throttle: number
-) {
-  ctx.save();
-  ctx.translate(car.x, car.y);
-  ctx.rotate(car.angle);
-
-  const length = car.length;
-  const width = car.width;
-  const halfL = length / 2;
-  const halfW = width / 2;
-
-  // 1. Soft Dynamic Drop Shadow & Optional Underglow
-  if (config.underglowColor) {
-    ctx.save();
-    const glowGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 48);
-    glowGrad.addColorStop(0, config.underglowColor);
-    glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glowGrad;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 46, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-  ctx.beginPath();
-  ctx.roundRect(-halfL + 4, -halfW + 5, length, width, 8);
-  ctx.fill();
-
-  // 2. Wheels
-  ctx.fillStyle = '#1e293b';
-  const wheelL = 16;
-  const wheelW = 7;
-  const wheelXFront = car.wheelBase / 2;
-  const wheelXRear = -car.wheelBase / 2;
-  const wheelYOffset = car.trackWidth / 2;
-
-  // Front Left Wheel (Steered)
-  ctx.save();
-  ctx.translate(wheelXFront, -wheelYOffset);
-  ctx.rotate(car.frontWheelSteerAngle);
-  ctx.fillRect(-wheelL / 2, -wheelW / 2, wheelL, wheelW);
-  ctx.restore();
-
-  // Front Right Wheel (Steered)
-  ctx.save();
-  ctx.translate(wheelXFront, wheelYOffset);
-  ctx.rotate(car.frontWheelSteerAngle);
-  ctx.fillRect(-wheelL / 2, -wheelW / 2, wheelL, wheelW);
-  ctx.restore();
-
-  // Rear Left Wheel
-  ctx.fillRect(wheelXRear - wheelL / 2, -wheelYOffset - wheelW / 2, wheelL, wheelW);
-  // Rear Right Wheel
-  ctx.fillRect(wheelXRear - wheelL / 2, wheelYOffset - wheelW / 2, wheelL, wheelW);
-
-  // 3. Car Main Body Shell
-  ctx.fillStyle = config.carColor;
-  ctx.beginPath();
-  ctx.roundRect(-halfL, -halfW, length, width, 10);
-  ctx.fill();
-
-  // Optional racing stripe
-  if (config.stripe && config.accentColor) {
-    ctx.fillStyle = config.accentColor;
-    ctx.fillRect(-halfL, -3.5, length, 7);
-  }
-
-  // Dark roof/cockpit
-  ctx.fillStyle = '#0f172a';
-  ctx.beginPath();
-  ctx.roundRect(-halfL + 12, -halfW + 4, length - 26, width - 8, 6);
-  ctx.fill();
-
-  // Windshield (Front)
-  ctx.fillStyle = '#38bdf8';
-  ctx.beginPath();
-  ctx.roundRect(halfL - 26, -halfW + 5, 8, width - 10, 3);
-  ctx.fill();
-
-  // Rear Window
-  ctx.fillStyle = '#0284c7';
-  ctx.beginPath();
-  ctx.roundRect(-halfL + 14, -halfW + 5, 6, width - 10, 2);
-  ctx.fill();
-
-  // Headlights
-  ctx.fillStyle = '#fef08a';
-  ctx.fillRect(halfL - 4, -halfW + 2, 4, 6);
-  ctx.fillRect(halfL - 4, halfW - 8, 4, 6);
-
-  // Brake / Taillights
-  const isBraking = throttle < 0 || (car.speed > 30 && throttle === 0);
-  ctx.fillStyle = isBraking ? '#ff0033' : '#7f1d1d';
-  ctx.fillRect(-halfL, -halfW + 3, 3, 6);
-  ctx.fillRect(-halfL, halfW - 9, 3, 6);
-
-  // Taillight glow on braking
-  if (isBraking) {
-    ctx.shadowColor = '#ff0033';
-    ctx.shadowBlur = 12;
-    ctx.fillRect(-halfL - 2, -halfW + 3, 2, 6);
-    ctx.fillRect(-halfL - 2, halfW - 9, 2, 6);
-    ctx.shadowBlur = 0;
-  }
-
-  // Spoilers & Rear Aero Wings
-  if (config.spoilerType === 'gt-wing') {
-    ctx.fillStyle = '#020617';
-    ctx.fillRect(-halfL - 4, -halfW - 2, 5, width + 4);
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(-halfL - 2, -halfW + 5, 3, 2.5);
-    ctx.fillRect(-halfL - 2, halfW - 7.5, 3, 2.5);
-    ctx.fillStyle = config.carColor;
-    ctx.fillRect(-halfL - 4, -halfW - 2, 1.5, width + 4);
-  } else if (config.spoilerType === 'dual-fin') {
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(-halfL - 3, -halfW + 2, 4, 6);
-    ctx.fillRect(-halfL - 3, halfW - 8, 4, 6);
-  } else if (config.spoilerType === 'ducktail') {
-    ctx.fillStyle = config.carColor;
-    ctx.fillRect(-halfL - 2, -halfW + 4, 2.5, width - 8);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.fillRect(-halfL - 2, -halfW + 4, 1, width - 8);
-  }
-
-  // Front Headlight Beam (Atmospheric light cone)
-  ctx.save();
-  const grad = ctx.createRadialGradient(halfL + 10, 0, 5, halfL + 90, 0, 100);
-  grad.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
-  grad.addColorStop(1, 'rgba(254, 240, 138, 0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(halfL, -halfW + 2);
-  ctx.lineTo(halfL + 130, -halfW - 35);
-  ctx.lineTo(halfL + 130, halfW + 35);
-  ctx.lineTo(halfL, halfW - 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  ctx.restore();
-}
-
-/**
- * Draws real-time physics vectors (velocity, heading, lateral slip)
- */
-function drawDebugVectors(ctx: CanvasRenderingContext2D, car: CarPhysics) {
-  ctx.save();
-  // 1. Heading Vector (Cyan)
-  ctx.strokeStyle = '#00f2fe';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(car.x, car.y);
-  ctx.lineTo(car.x + Math.cos(car.angle) * 50, car.y + Math.sin(car.angle) * 50);
-  ctx.stroke();
-
-  // 2. Velocity Vector (Green / Yellow)
-  if (car.speed > 5) {
-    ctx.strokeStyle = car.isDrifting ? '#ff7e40' : '#39ff14';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(car.x, car.y);
-    ctx.lineTo(car.x + car.vx * 0.25, car.y + car.vy * 0.25);
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}

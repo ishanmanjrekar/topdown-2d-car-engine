@@ -56,6 +56,13 @@ if (Test-Path $TargetZipPath) {
     Write-Host "==============================================" -ForegroundColor Green
     Write-Host "Saved Location: $TargetZipPath" -ForegroundColor Cyan
     Write-Host "Size: $((Get-Item $TargetZipPath).Length / 1MB | ForEach-Object { '{0:N2}' -f $_ }) MB" -ForegroundColor Gray
+
+    # Retain only the latest 2 itch build archives in dump/ to prevent storage bloat
+    $OlderZips = Get-ChildItem -Path $DumpDir -Filter "*-itch.zip" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 2
+    if ($OlderZips) {
+        Write-Host "Pruning $($OlderZips.Count) older archive(s) in dump/..." -ForegroundColor DarkGray
+        $OlderZips | Remove-Item -Force
+    }
 } else {
     Write-Host "Error: The build finished but the output ZIP could not be found at: $TargetZipPath" -ForegroundColor Red
     Exit 1

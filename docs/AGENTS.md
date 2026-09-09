@@ -13,8 +13,19 @@ src/
 │   ├── CarPhysics.ts            # Vehicle dynamics, longitudinal drive, braking, lateral drift
 │   ├── RearTouchController.ts   # Touch-behind anchor projection, push throttle & steering
 │   ├── Camera.ts                # Lookahead chase camera with car-up rotation & damping
-│   ├── ParticleSystem.ts        # Wheel skid marks and expanding tire smoke
-│   └── Track.ts                 # Arena boundary, wall bounce, slalom cones
+│   ├── ParticleSystem.ts        # Batched wheel skid marks and expanding tire smoke
+│   ├── Track.ts                 # Base track interfaces and obstacle structures
+│   ├── renderers/               # MODULAR CANVAS RENDERERS
+│   │   ├── CarRenderer.ts       # Procedural vector car chassis, wings, splitters, lights
+│   │   ├── GizmoRenderer.ts     # Rear-touch push-behind UI gizmo with spring lines & arcs
+│   │   └── DebugRenderer.ts     # Collision spine capsules, velocity vectors, lookahead
+│   └── __tests__/               # AUTOMATED ENGINE TEST SUITE (Vitest)
+│       ├── CarPhysics.test.ts   # Powertrain, braking, steering authority, drag & drift tests
+│       ├── RearTouchController.test.ts # Anchor projection, deadzone, steering & reverse tests
+│       └── Camera.test.ts       # Coordinate transforms, lookahead, and viewport bounds
+│
+├── hooks/
+│   └── useGameLoop.ts           # 120 Hz fixed-timestep sub-stepping accumulator with shouldRender
 │
 ├── stores/                      # STATE MANAGEMENT (Zustand)
 │   ├── useGameStore.ts          # Telemetry stream, HUD visibility flags, UI modals
@@ -33,6 +44,7 @@ src/
 │
 └── demo/                        # DETACHABLE DEMO LAYER (Zero core dependencies)
     ├── carPresets.ts            # 5 Car presets (Apex GT, Track Phantom, Tokyo Drifter, etc.)
+    ├── track/DemoTrack.ts       # Capsule collision, radial arc turns, procedural decorations
     └── components/
         ├── CarPreview.tsx       # Standalone canvas top-down vector vehicle preview
         └── CarSelectModal.tsx   # Showroom dialog with 3-stat ratings and DRIVE button
@@ -74,13 +86,47 @@ When generating or refactoring code in this repository, you **MUST** uphold thes
   this.lateralVelocity *= Math.pow(config.driftFactor, dt * 60);
   ```
 
-### 5. Decoupled Demo Layer
+### 5. Continuous Touch Tracking & Re-projection
+- **Never** store unprojected world coordinates statically on `pointerdown` and leave them frozen. When a user holds a finger steady, the moving car causes the anchor point to move away, which erroneously triggers reverse/braking.
+- Save the current pointer screen coordinates `(screenX, screenY)` and call `camera.screenToWorld()` on **every frame or physics tick**.
+- Filter pointer events by `pointerId` so multi-touch taps or HUD presses cannot hijack vehicle steering.
+
+### 6. Mandatory Atomic Zustand Selectors
+- **Never** consume whole stores like `const state = useGameStore()` inside HUD or modal components.
+- Because `updateTelemetry()` emits updates at ~18 Hz, an unselected `useGameStore()` causes high-frequency re-render cascades throughout closed modals and drawers. Always use atomic selectors:
+  ```tsx
+  const carSelectOpen = useGameStore((state) => state.carSelectOpen);
+  ```
+
+### 7. Zero-Allocation Hot Loops
+- Avoid instantiating new objects, arrays, or lambdas inside the 120 Hz physics step or 60 FPS render pipeline.
+- Reuse preallocated buffers (such as `wheelBuffer`, `rearBumperBuffer`, and `Float64Array`) and mutate in-place.
+- In `ParticleSystem.ts`, batch skid marks into 3 alpha buckets to collapse hundreds of individual `stroke()` calls into 3 canvas paths.
+
+### 8. Fixed-Timestep Physics Accumulator
+- The physics engine runs at a fixed $120\text{ Hz}$ ($dt = 1/120\text{ s}$) inside `useGameLoop.ts`.
+- Only trigger canvas rendering when `shouldRender === true` on the final sub-step to eliminate redundant canvas redraws.
+
+### 9. Decoupled Demo Layer
 - Any new showcase cars, cosmetic menus, or demo gameplay modes should be added inside `src/demo/`.
 - Do **not** hardcode demo-specific presets inside `CarPhysics.ts`.
 
 ---
 
-## 3. Ready-to-Use AI Agent Prompt Templates
+## 3. Automated Testing
+
+The engine includes a Vitest test suite covering physics, rear-touch controller mathematics, and camera projections.
+
+Run tests:
+```bash
+npm test
+```
+
+All engine tests reside in `src/engine/__tests__/`. Always add or maintain tests when modifying vehicle dynamics or input formulas.
+
+---
+
+## 4. Ready-to-Use AI Agent Prompt Templates
 
 ### Template A: Adding AI Enemy / Pursuit Cars
 ```text
@@ -90,8 +136,8 @@ https://github.com/ishanmanjrekar/topdown-2d-car-engine
 Please instantiate an array of CarPhysics instances in a new manager 'src/engine/AIPursuitManager.ts':
 1. Steer towards the player's world position (car.x, car.y).
 2. Calculate target steering angle using Math.atan2(dy, dx) - aiCar.angle.
-3. Apply obstacle avoidance against Track cones and boundary walls.
-4. Render the AI cars in CarCanvas.tsx with distinct enemy colors.
+3. Apply obstacle avoidance against DemoTrack obstacles and boundaries.
+4. Render the AI cars using CarRenderer with distinct enemy colors.
 ```
 
 ### Template B: Adding Checkpoint Lap Timer & Race Track
@@ -109,6 +155,6 @@ Please:
 I want to replace the procedural canvas vehicle with my own PNG car sprite.
 Please refer to 'docs/INTEGRATION_GUIDE.md' and:
 1. Load my car texture asset using standard Image() loading.
-2. Update drawCar() in 'src/components/game/CarCanvas.tsx' to use ctx.drawImage() centered on (-length/2, -width/2).
+2. Update 'src/engine/renderers/CarRenderer.ts' to use ctx.drawImage() centered on (-length/2, -width/2).
 3. Ensure front wheels still render or rotate appropriately if the sprite does not include baked-in wheels.
 ```

@@ -148,25 +148,29 @@ $$\vec{P}_{\text{wheel}} = \begin{pmatrix} x \\ y \end{pmatrix} + \begin{pmatrix
 
 ---
 
-## World Bounds & Collision Dynamics (`Track.ts`)
+## World Bounds & Collision Dynamics (`Track.ts` & `DemoTrack.ts`)
 
 ### 1. Perimeter Arena Boundaries
-The playable arena is bounded by $X \in [-1300, 1300]\text{ px}$ and $Y \in [-1300, 1300]\text{ px}$ (a $2600 \times 2600\text{ px}$ tarmac arena).
+- **Standalone Engine Track (`Track.ts`)**: Bounded by $X, Y \in [-1200, 1200]\text{ px}$ ($2400 \times 2400\text{ px}$).
+- **Motorsport Proving Ground (`DemoTrack.ts`)**: Bounded by $X, Y \in [-1350, 1350]\text{ px}$ ($2700 \times 2700\text{ px}$).
 
-When the vehicle collides with a boundary wall (accounting for a $32\text{ px}$ car half-extent margin):
-- Position is clamped to the boundary margin.
+When the vehicle collides with an outer perimeter barrier (accounting for a $34\text{ px}$ car half-extent margin):
+- Position is clamped to the barrier margin along the normal.
 - Perpendicular velocity is reflected with an elastic restitution coefficient:
-  $$v_{\perp} \leftarrow -v_{\perp} \cdot 0.35$$
+  $$v_{\perp} \leftarrow -v_{\perp} \cdot 0.45$$
 - Parallel velocity is attenuated by wall surface friction:
-  $$v_{\parallel} \leftarrow v_{\parallel} \cdot 0.75$$
+  $$v_{\parallel} \leftarrow v_{\parallel} \cdot 0.85$$
 - Angular velocity is dampened to prevent erratic spinning along barriers:
   $$\omega \leftarrow \omega \cdot 0.40$$
 
-### 2. Track Cones & Obstacles
-- Slalom courses and skid pad rings feature traffic cones ($r_{\text{cone}} = 10\text{ px}$).
-- Circle-circle collision detection against vehicle collision radius ($r_{\text{car}} = 26\text{ px}$):
-  $$\text{dist} = \sqrt{(x - x_{\text{cone}})^2 + (y - y_{\text{cone}})^2} < (26 + 10)\text{ px}$$
-- When hit, `cone.hit` is flagged `true`, rendering the cone as knocked over and displaced.
+### 2. Swept Axle Capsule Collision Geometry (Trees, Cones & Props)
+In `DemoTrack.ts`, obstacles are tested against the vehicle's **two-circle swept spine capsule** rather than a single center circle:
+- Spine segment spans from the rear axle $(x - 18\cos\theta, y - 18\sin\theta)$ to the front axle $(x + 18\cos\theta, y + 18\sin\theta)$, with a capsule radius of $r_{\text{capsule}} = 17\text{ px}$ ($34\text{ px}$ total width).
+- For any circular obstacle at $(O_x, O_y)$ with radius $R_{\text{obs}}$, the collision test finds the closest point on the car's spine:
+  $$\text{proj} = \max(0, \min(36, (O_x - \text{rear}_x)\cos\theta + (O_y - \text{rear}_y)\sin\theta))$$
+  $$P_{\text{closest}} = \text{rear} + \text{proj} \cdot \vec{u}_{\text{fwd}}$$
+  $$\text{dist} = \|O - P_{\text{closest}}\| < (17 + R_{\text{obs}})$$
+- This ensures full geometric coverage: whether colliding nose-first, tail-first, or sliding broadside into trees or cones, the vehicle body never visually penetrates obstacle boundaries.
 
 ---
 

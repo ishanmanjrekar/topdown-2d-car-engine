@@ -142,9 +142,9 @@ By default, the engine draws a sleek procedural vector sports car with glowing h
    carSprite.src = '/assets/cars/supercar_topdown.png';
    ```
 
-2. Replace the body rendering inside `drawCar()`:
+2. Replace the procedural body rendering in [`src/engine/renderers/CarRenderer.ts`](../src/engine/renderers/CarRenderer.ts):
    ```ts
-   function drawCar(ctx: CanvasRenderingContext2D, car: CarPhysics, config: any) {
+   export function drawCar(ctx: CanvasRenderingContext2D, car: CarPhysics, config: any) {
      ctx.save();
      ctx.translate(car.x, car.y);
      ctx.rotate(car.angle);
@@ -152,7 +152,7 @@ By default, the engine draws a sleek procedural vector sports car with glowing h
      const width = car.width;   // e.g. 32px
      const length = car.length; // e.g. 64px
 
-     // Draw custom sprite centered
+     // Draw custom sprite centered along heading
      ctx.drawImage(carSprite, -length / 2, -width / 2, length, width);
 
      ctx.restore();
@@ -163,16 +163,29 @@ By default, the engine draws a sleek procedural vector sports car with glowing h
 
 ## 4. Designing Custom Tracks & Surface Grip
 
-### Custom Track Layouts:
-Edit [`src/engine/Track.ts`](../src/engine/Track.ts):
-- Change `this.bounds = { minX: -2000, maxX: 2000, minY: -2000, maxY: 2000 }` to set custom world borders.
-- Populate `this.innerCones` and `this.outerCones` with custom waypoint coordinates to trace race circuits, hairpins, and chicanes.
+### Custom Track Implementation (`ITrack` Interface):
+Create a new track class implementing [`ITrack`](../src/engine/ITrack.ts):
+```ts
+export interface ITrack {
+  bounds: TrackBounds;
+  update(dt: number, car: CarPhysics): void;
+  checkCollisions(car: CarPhysics, dt: number): void;
+  getSurfaceAt?(x: number, y: number): SurfaceProperties;
+  render(ctx: CanvasRenderingContext2D, camX: number, camY: number, viewW: number, viewH: number): void;
+  reset(): void;
+}
+```
+- **Boundaries**: Set `this.bounds = { minX: -2000, maxX: 2000, minY: -2000, maxY: 2000 }`.
+- **Obstacles & Collisions**: Implement collision checks against track walls or custom prop arrays in `checkCollisions(car, dt)` using the car's swept axle capsule geometry.
+- **Reference Implementations**:
+  - [`src/engine/Track.ts`](../src/engine/Track.ts): Minimal, standalone rectangular arena with outer walls.
+  - [`src/demo/track/DemoTrack.ts`](../src/demo/track/DemoTrack.ts): Full grand prix circuit with curbs, dynamic launchable cones, solid trees, and pit walls.
 
-### Surface Friction (Asphalt vs. Mud vs. Ice):
-You can dynamically modify `config.driftFactor` and `config.naturalDrag` based on the car's current world coordinates:
-- **Asphalt**: `driftFactor: 0.90` (crisp cornering)
-- **Mud / Gravel**: `driftFactor: 0.96`, `naturalDrag: 0.94` (loose slide, heavy resistance)
-- **Ice / Oil Slick**: `driftFactor: 0.985`, `naturalDrag: 0.995` (near frictionless slip)
+### Surface Friction & Drag (`getSurfaceAt`):
+Implement `getSurfaceAt(x, y)` to return localized grip and drag multipliers:
+- **Asphalt**: `gripMultiplier: 1.0`, `dragMultiplier: 1.0` (normal grip)
+- **Grass / Gravel**: `gripMultiplier: 0.82`, `dragMultiplier: 1.28` (off-track slip and drag)
+- **Ice / Oil Slick**: `gripMultiplier: 0.60`, `dragMultiplier: 0.95` (extreme drift slide)
 
 ---
 

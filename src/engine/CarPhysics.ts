@@ -169,6 +169,15 @@ export class CarPhysics {
     }
   }
 
+  // Preallocated buffer to avoid ~1,000 GC allocations/sec
+  private wheelBuffer: WheelPosition[] = [
+    { x: 0, y: 0, isFront: true, isLeft: true },
+    { x: 0, y: 0, isFront: true, isLeft: false },
+    { x: 0, y: 0, isFront: false, isLeft: true },
+    { x: 0, y: 0, isFront: false, isLeft: false }
+  ];
+  private rearBumperBuffer = { x: 0, y: 0 };
+
   /**
    * Returns world coordinates of all 4 wheels for rendering and skid mark generation
    */
@@ -179,19 +188,23 @@ export class CarPhysics {
     const halfWheelBase = this.wheelBase / 2;
     const halfTrack = this.trackWidth / 2;
 
-    const wheels: { fwd: number; side: number; isFront: boolean; isLeft: boolean }[] = [
-      { fwd: halfWheelBase, side: -halfTrack, isFront: true, isLeft: true },   // Front-Left
-      { fwd: halfWheelBase, side: halfTrack, isFront: true, isLeft: false },   // Front-Right
-      { fwd: -halfWheelBase, side: -halfTrack, isFront: false, isLeft: true }, // Rear-Left
-      { fwd: -halfWheelBase, side: halfTrack, isFront: false, isLeft: false }, // Rear-Right
-    ];
+    // Front-Left
+    this.wheelBuffer[0].x = this.x + halfWheelBase * cos + halfTrack * sin;
+    this.wheelBuffer[0].y = this.y + halfWheelBase * sin - halfTrack * cos;
 
-    return wheels.map((w) => ({
-      x: this.x + w.fwd * cos - w.side * sin,
-      y: this.y + w.fwd * sin + w.side * cos,
-      isFront: w.isFront,
-      isLeft: w.isLeft
-    }));
+    // Front-Right
+    this.wheelBuffer[1].x = this.x + halfWheelBase * cos - halfTrack * sin;
+    this.wheelBuffer[1].y = this.y + halfWheelBase * sin + halfTrack * cos;
+
+    // Rear-Left
+    this.wheelBuffer[2].x = this.x - halfWheelBase * cos + halfTrack * sin;
+    this.wheelBuffer[2].y = this.y - halfWheelBase * sin - halfTrack * cos;
+
+    // Rear-Right
+    this.wheelBuffer[3].x = this.x - halfWheelBase * cos - halfTrack * sin;
+    this.wheelBuffer[3].y = this.y - halfWheelBase * sin + halfTrack * cos;
+
+    return this.wheelBuffer;
   }
 
   /**
@@ -200,9 +213,8 @@ export class CarPhysics {
   public getRearBumperPosition(offset: number = 32): { x: number; y: number } {
     const cos = Math.cos(this.angle);
     const sin = Math.sin(this.angle);
-    return {
-      x: this.x - offset * cos,
-      y: this.y - offset * sin
-    };
+    this.rearBumperBuffer.x = this.x - offset * cos;
+    this.rearBumperBuffer.y = this.y - offset * sin;
+    return this.rearBumperBuffer;
   }
 }

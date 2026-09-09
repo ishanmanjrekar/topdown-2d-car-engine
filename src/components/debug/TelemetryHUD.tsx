@@ -29,8 +29,10 @@ function getContrastInfo(hexColor: string) {
 }
 
 export const TelemetryHUD: React.FC = () => {
-  const { telemetry, toggleDebugMenu, setCarSelectOpen } = useGameStore();
-  const { carColor } = useCarConfigStore();
+  const telemetry = useGameStore((s) => s.telemetry);
+  const toggleDebugMenu = useGameStore((s) => s.toggleDebugMenu);
+  const setCarSelectOpen = useGameStore((s) => s.setCarSelectOpen);
+  const carColor = useCarConfigStore((s) => s.carColor);
 
   const handleReset = () => {
     if (typeof (window as any).__resetCarEngine === 'function') {
@@ -38,7 +40,7 @@ export const TelemetryHUD: React.FC = () => {
     }
   };
 
-  const contrast = getContrastInfo(carColor);
+  const contrast = React.useMemo(() => getContrastInfo(carColor), [carColor]);
 
   return (
     <div

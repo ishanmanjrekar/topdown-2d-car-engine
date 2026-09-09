@@ -245,25 +245,40 @@ export class DemoTrack implements ITrack {
   }
 
   public checkCollisions(car: CarPhysics, _dt: number): void {
-    const carRadius = 26;
+    const carCos = Math.cos(car.angle);
+    const carSin = Math.sin(car.angle);
+    const spineHalf = 18; // Front to rear spine half-length
+    const capsuleR = 17;   // Half-width + bumper buffer
+
+    const rearX = car.x - spineHalf * carCos;
+    const rearY = car.y - spineHalf * carSin;
+    const spineLen = spineHalf * 2;
 
     // A. Outer Perimeter Boundaries
     this.checkPerimeterWalls(car);
 
-    // B. Solid Tree Trunks
+    // B. Solid Tree Trunks (Tested against vehicle swept capsule)
     for (const tree of this.trees) {
-      const dx = car.x - tree.x;
-      const dy = car.y - tree.y;
-      const dist = Math.hypot(dx, dy);
-      const minDist = carRadius + tree.trunkRadius;
+      // Find closest point on car spine segment to tree center
+      const toTreeX = tree.x - rearX;
+      const toTreeY = tree.y - rearY;
+      const proj = Math.max(0, Math.min(spineLen, toTreeX * carCos + toTreeY * carSin));
+      const closeX = rearX + proj * carCos;
+      const closeY = rearY + proj * carSin;
 
-      if (dist < minDist && dist > 0.001) {
+      const dx = closeX - tree.x;
+      const dy = closeY - tree.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = capsuleR + tree.trunkRadius;
+
+      if (dist < minDist && dist > 0.0001) {
         const nx = dx / dist;
         const ny = dy / dist;
+        const penetration = minDist - dist;
 
         // Push car out along contact normal
-        car.x = tree.x + nx * minDist;
-        car.y = tree.y + ny * minDist;
+        car.x += nx * penetration;
+        car.y += ny * penetration;
 
         // Rebound impulse
         const vDotN = car.vx * nx + car.vy * ny;
@@ -285,22 +300,27 @@ export class DemoTrack implements ITrack {
       this.checkBarrierCollision(car, b);
     }
 
-    // D. Dynamic Cones
+    // D. Dynamic Cones (Tested against vehicle swept capsule)
     for (const cone of this.cones) {
       if (cone.state !== 'standing') continue;
 
-      const dx = cone.x - car.x;
-      const dy = cone.y - car.y;
+      const toConeX = cone.x - rearX;
+      const toConeY = cone.y - rearY;
+      const proj = Math.max(0, Math.min(spineLen, toConeX * carCos + toConeY * carSin));
+      const closeX = rearX + proj * carCos;
+      const closeY = rearY + proj * carSin;
+
+      const dx = cone.x - closeX;
+      const dy = cone.y - closeY;
       const dist = Math.hypot(dx, dy);
-      const minDist = carRadius + cone.radius;
+      const minDist = capsuleR + cone.radius;
 
       if (dist < minDist) {
-        // Impact! Send cone flying
         cone.state = 'flying';
         cone.flyTimer = 0;
 
-        const nx = dist > 0.001 ? dx / dist : 0;
-        const ny = dist > 0.001 ? dy / dist : -1;
+        const nx = dist > 0.001 ? dx / dist : carCos;
+        const ny = dist > 0.001 ? dy / dist : carSin;
 
         const carSpeed = Math.hypot(car.vx, car.vy);
         const launchSpeed = Math.max(carSpeed * 1.3, 140);
@@ -422,17 +442,28 @@ export class DemoTrack implements ITrack {
       return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
     }
 
-    // 4. North Sweeper Turn Ribbon
-    if (y < -400 && y >= -950 && x >= -150 && x <= 950) {
+    // 4. North Sweeper Turn Ribbon (Center: 400, -500; Inner R: 280, Outer R: 520)
+    if (y <= -490) {
+      const d = Math.hypot(x - 400, y - (-500));
+      if (d >= 270 && d <= 530) {
+        return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
+      }
+    }
+
+    // 5. South Return Loop Ribbon (Center: 400, 750; Inner R: 280, Outer R: 520)
+    if (y >= 740) {
+      const d = Math.hypot(x - 400, y - 750);
+      if (d >= 270 && d <= 530) {
+        return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
+      }
+    }
+
+    // 6. East Straight Ribbon (x: 680 to 920, y: -500 to 750)
+    if (x >= 670 && x <= 930 && y >= -500 && y <= 750) {
       return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
     }
 
-    // 5. South Return Loop Ribbon
-    if (y > 600 && y <= 1050 && x >= -150 && x <= 950) {
-      return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
-    }
-
-    // 6. Connecting Roads
+    // 7. Connecting Roads
     // Skidpad access road (y: -80 to 80, x: -780 to -110)
     if (y >= -90 && y <= 90 && x >= -780 && x <= -110) {
       return { type: 'asphalt', gripMultiplier: 1.0, dragMultiplier: 1.0 };
@@ -530,8 +561,6 @@ export class DemoTrack implements ITrack {
   private renderAsphaltTracks(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.fillStyle = '#11141e'; // Premium dark tarmac
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 12;
 
     // Main Straightaway (-120 to +120, y: -500 to 750)
     ctx.fillRect(-120, -500, 240, 1250);
