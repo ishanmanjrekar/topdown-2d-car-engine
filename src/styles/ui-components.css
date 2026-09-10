@@ -186,11 +186,19 @@
   -webkit-backdrop-filter: blur(18px);
   border: 2px solid #ffffff;
   border-radius: 20px;
-  padding: 12px 18px;
+  padding: 10px 16px;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 176px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ui-speedo-card.is-drifting {
+  border-color: var(--color-coral);
+  box-shadow: 0 14px 32px rgba(255, 71, 87, 0.35), 0 0 16px var(--color-coral-glow);
 }
 
 .ui-speedo-val {
@@ -222,25 +230,66 @@
   color: #0f172a;
 }
 
-/* Drift Badge */
-.ui-badge-drift {
+/* Arcade Drift Badge (Decoupled from Header Flow) */
+.ui-arcade-drift-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: var(--color-coral);
+  gap: 6px;
+  background: linear-gradient(135deg, #ff4757 0%, #ff6348 50%, #ffa502 100%);
   color: #ffffff;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-family: var(--theme-font-action);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.8px;
-  box-shadow: 0 2px 0 var(--color-coral-shadow), 0 0 12px var(--color-coral-glow);
-  animation: pulseBadge 1.2s infinite ease-in-out;
+  text-transform: uppercase;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 3px 0 #b91c1c, 0 8px 18px rgba(255, 71, 87, 0.45), 0 0 12px rgba(255, 165, 2, 0.35);
+  animation: driftBadgeEntrance 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, pulseDriftGlow 1.2s infinite ease-in-out;
+  pointer-events: none;
+  user-select: none;
 }
 
-@keyframes pulseBadge {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+.ui-drift-flame {
+  color: #ffffff;
+  filter: drop-shadow(0 0 4px #ffe600);
+  animation: flameFlicker 0.6s infinite alternate ease-in-out;
+}
+
+.ui-drift-deg {
+  font-family: var(--theme-font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: 0px;
+}
+
+@keyframes driftBadgeEntrance {
+  0% {
+    transform: translateY(-6px) scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseDriftGlow {
+  0%, 100% {
+    box-shadow: 0 3px 0 #b91c1c, 0 8px 18px rgba(255, 71, 87, 0.45), 0 0 12px rgba(255, 165, 2, 0.35);
+  }
+  50% {
+    box-shadow: 0 3px 0 #991b1b, 0 10px 22px rgba(255, 71, 87, 0.65), 0 0 18px rgba(255, 165, 2, 0.55);
+  }
+}
+
+@keyframes flameFlicker {
+  0% { transform: scale(1) rotate(-4deg); }
+  100% { transform: scale(1.18) rotate(4deg); }
 }
 
 /* Bottom Guidance Pill */

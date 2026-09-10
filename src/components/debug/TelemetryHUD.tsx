@@ -69,26 +69,20 @@ export const TelemetryHUD: React.FC = () => {
         }}
       >
         {/* Left Column: Speedometer & Choose Car */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'auto', flexShrink: 0 }}>
           {/* Speedometer & Primary Telemetry in Standout Light Mode */}
-          <div className="ui-speedo-card">
+          <div className={`ui-speedo-card ${telemetry.isDrifting ? 'is-drifting' : ''}`}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
               <span className="ui-speedo-val">
                 {telemetry.speedKmh}
               </span>
               <span className="ui-speedo-unit">KM/H</span>
-
-              {telemetry.isDrifting && (
-                <span className="ui-badge-drift" style={{ marginLeft: '4px' }}>
-                  <Flame size={13} /> DRIFT
-                </span>
-              )}
             </div>
 
             <div
               style={{
                 display: 'flex',
-                gap: '12px',
+                gap: '10px',
                 fontSize: '11px',
                 marginTop: '2px'
               }}
@@ -123,31 +117,52 @@ export const TelemetryHUD: React.FC = () => {
           </button>
         </div>
 
-        {/* Action Controls (Reset, Tune) */}
-        <div style={{ display: 'flex', gap: '10px', pointerEvents: 'auto', flexShrink: 0 }}>
-          <button
-            onClick={handleReset}
-            className="btn-chunky btn-chunky-ghost btn-chunky-icon"
-            style={{ width: '46px', height: '46px' }}
-            title="Reset Vehicle (R)"
-          >
-            <RotateCcw size={19} />
-          </button>
+        {/* Action Controls (Reset, Tune) & Dedicated Drift Indicator */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '8px',
+            pointerEvents: 'auto',
+            flexShrink: 0
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleReset}
+              className="btn-chunky btn-chunky-ghost btn-chunky-icon"
+              style={{ width: '44px', height: '44px' }}
+              title="Reset Vehicle (R)"
+            >
+              <RotateCcw size={18} />
+            </button>
 
-          <button
-            onClick={toggleDebugMenu}
-            className="btn-chunky btn-chunky-sky"
-            title="Car Setup & Debug Menu"
-            style={{
-              height: '46px',
-              padding: '0 16px',
-              fontSize: '14px',
-              gap: '8px'
-            }}
-          >
-            <Settings2 size={18} />
-            <span>TUNING</span>
-          </button>
+            <button
+              onClick={toggleDebugMenu}
+              className="btn-chunky btn-chunky-sky"
+              title="Car Setup & Debug Menu"
+              style={{
+                height: '44px',
+                padding: '0 14px',
+                fontSize: '13px',
+                gap: '6px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Settings2 size={16} />
+              <span>TUNING</span>
+            </button>
+          </div>
+
+          {/* Dedicated Drift Indicator */}
+          {telemetry.isDrifting && (
+            <div className="ui-arcade-drift-badge" role="status" aria-label="Drifting">
+              <Flame size={14} className="ui-drift-flame" />
+              <span>DRIFT</span>
+              <span className="ui-drift-deg">{telemetry.slipAngle}°</span>
+            </div>
+          )}
         </div>
       </div>
 
